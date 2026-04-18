@@ -102,10 +102,10 @@ const CreateFrames = () => {
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
   const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
     switch (p) {
-      case "bottom-left": return { x: 2, y: 98 };
-      case "bottom-right": return { x: 98, y: 98 };
-      case "top-left": return { x: 2, y: 2 };
-      case "top-right": return { x: 98, y: 2 };
+      case "bottom-left": return { x: 1, y: 99 };
+      case "bottom-right": return { x: 99, y: 99 };
+      case "top-left": return { x: 1, y: 1 };
+      case "top-right": return { x: 99, y: 1 };
     }
   };
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
