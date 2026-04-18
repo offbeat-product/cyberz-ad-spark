@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Volume2,
   Trash2,
+  Dices,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
