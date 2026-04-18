@@ -48,7 +48,7 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
 
 const HISTORY_MAX = 20;
 
-const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) => {
+const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFrameUrl }: Props) => {
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
