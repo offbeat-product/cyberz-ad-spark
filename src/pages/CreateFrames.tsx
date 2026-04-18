@@ -964,7 +964,6 @@ const CreateFrames = () => {
           </Accordion>
         </div>
       </div>
-
             <div className="space-y-3 border-t border-border pt-4">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">背景帯</Label>
