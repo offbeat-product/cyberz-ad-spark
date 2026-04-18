@@ -182,6 +182,8 @@ const CreateExport = () => {
   const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [uploadAsTemplate, setUploadAsTemplate] = useState<"yes" | "no">("no");
   const [uploadTemplateCategory, setUploadTemplateCategory] = useState<string>("");
+  const [uploadQueue, setUploadQueue] = useState<File[]>([]);
+  const [bgmDragOver, setBgmDragOver] = useState(false);
 
   // Volume
   const [normalizeVolume, setNormalizeVolume] = useState(true);
@@ -232,21 +234,57 @@ const CreateExport = () => {
     toast.success(`ランダム選択: ${randomTrack.name}`);
   };
 
-  const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (!ACCEPTED_AUDIO.includes(file.type)) {
-      toast.error("対応していない形式です", { description: "MP3 / WAV / M4A をアップロードしてください" });
-      return;
-    }
-    if (file.size > MAX_AUDIO_SIZE) {
-      toast.error("ファイルサイズが大きすぎます", { description: "50MB以下のファイルをアップロードしてください" });
-      return;
-    }
-    setPendingUploadFile(file);
+  const enqueueFiles = (fileList: FileList | File[] | null) => {
+    if (!fileList) return;
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    const isAudio = (f: File) =>
+      ACCEPTED_AUDIO.includes(f.type) || /\.(mp3|wav|m4a)$/i.test(f.name);
+
+    const validFiles = files.filter(isAudio);
+    const skipped = files.length - validFiles.length;
+    if (skipped > 0) toast.error(`${skipped}件のファイルは未対応の形式のためスキップしました`);
+
+    const sizeOk = validFiles.filter((f) => {
+      if (f.size > MAX_AUDIO_SIZE) {
+        toast.error(`${f.name} は50MBを超えているためアップロードできません`);
+        return false;
+      }
+      return true;
+    });
+    if (sizeOk.length === 0) return;
+
+    const [first, ...rest] = sizeOk;
+    setUploadQueue((q) => [...q, ...rest]);
     setUploadAsTemplate("no");
     setUploadTemplateCategory("");
+    setPendingUploadFile(first);
+  };
+
+  const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    enqueueFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  const handleBgmDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setBgmDragOver(false);
+    enqueueFiles(e.dataTransfer.files);
+  };
+
+  const advanceQueue = () => {
+    setUploadQueue((q) => {
+      if (q.length === 0) {
+        setPendingUploadFile(null);
+        return q;
+      }
+      const [next, ...rest] = q;
+      setUploadAsTemplate("no");
+      setUploadTemplateCategory("");
+      setPendingUploadFile(next);
+      return rest;
+    });
   };
 
   const confirmUpload = () => {
@@ -257,15 +295,19 @@ const CreateExport = () => {
     }
     const url = URL.createObjectURL(pendingUploadFile);
     const newBgm: UploadedBGM = {
-      id: `upload-${Date.now()}`,
+      id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: pendingUploadFile.name,
       url,
       isTemplate: uploadAsTemplate === "yes",
       templateCategory: uploadAsTemplate === "yes" ? uploadTemplateCategory : undefined,
     };
     setUploadedBgms((prev) => [...prev, newBgm]);
-    setPendingUploadFile(null);
-    toast.success("BGMをアップロードしました");
+    toast.success(`アップロード完了: ${pendingUploadFile.name}`);
+    advanceQueue();
+  };
+
+  const cancelUpload = () => {
+    advanceQueue();
   };
 
   const removeUpload = (id: string) => {
@@ -444,28 +486,42 @@ const CreateExport = () => {
           </section>
 
           {/* My Uploads */}
-          <section className="rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Upload className="h-4 w-4 text-primary" />
-                <h2 className="font-semibold">マイアップロード</h2>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload /> BGMを個別でアップロード
-              </Button>
+          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">マイアップロード</h2>
+            </div>
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!bgmDragOver) setBgmDragOver(true);
+              }}
+              onDragLeave={() => setBgmDragOver(false)}
+              onDrop={handleBgmDrop}
+              className={cn(
+                "cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors flex flex-col items-center gap-2",
+                bgmDragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-background hover:bg-muted/40",
+              )}
+            >
+              <Upload className="h-7 w-7 text-muted-foreground" />
+              <div className="text-sm font-medium">ここに音源ファイルをドロップ</div>
+              <div className="text-xs text-muted-foreground">またはクリックして選択</div>
+              <div className="text-xs text-muted-foreground">MP3 / WAV / M4A（最大50MB）</div>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a,.mp3,.wav,.m4a"
+                multiple
                 className="hidden"
                 onChange={handleFileSelected}
               />
             </div>
-            {uploadedBgms.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                MP3 / WAV / M4A（最大50MB）をアップロードできます
-              </p>
-            ) : (
+
+            {uploadedBgms.length > 0 && (
               <div className="space-y-1">
                 {uploadedBgms.map((bgm) => {
                   const selected = selectedBgmId === bgm.id;
@@ -660,7 +716,7 @@ const CreateExport = () => {
       </div>
 
       {/* Upload confirmation dialog */}
-      <Dialog open={!!pendingUploadFile} onOpenChange={(open) => !open && setPendingUploadFile(null)}>
+      <Dialog open={!!pendingUploadFile} onOpenChange={(open) => !open && cancelUpload()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>BGMをアップロード</DialogTitle>
@@ -705,7 +761,7 @@ const CreateExport = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingUploadFile(null)}>
+            <Button variant="outline" onClick={cancelUpload}>
               キャンセル
             </Button>
             <Button onClick={confirmUpload}>アップロード</Button>
