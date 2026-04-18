@@ -379,12 +379,67 @@ const AssetFormModal = ({
           </div>
 
           <div className="flex h-full flex-col overflow-hidden bg-white p-6">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <span className="text-sm font-semibold">プレビュー</span>
               <span className="text-xs text-muted-foreground">
                 {canvasW}×{canvasH}
               </span>
             </div>
+
+            {/* Logo: frame selector or canvas size selector */}
+            {kind === "logo" && (
+              <div className="mb-3">
+                {hasFrames ? (
+                  <Select value={selectedFrameId} onValueChange={setSelectedFrameId}>
+                    <SelectTrigger
+                      className={
+                        selectedFrameId !== "none"
+                          ? "border-transparent text-white bg-gradient-to-r from-[#409EEA] to-[#6C81FC] [&>svg]:text-white"
+                          : ""
+                      }
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">フレームなし</SelectItem>
+                      {availableFrames.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                          {f.isDefault ? "（デフォルト）" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { w: 1080, h: 1350 },
+                      { w: 1080, h: 1920 },
+                      { w: 1080, h: 1080 },
+                    ] as const).map((s) => {
+                      const active = fallbackSize.w === s.w && fallbackSize.h === s.h;
+                      return (
+                        <Button
+                          key={`${s.w}x${s.h}`}
+                          type="button"
+                          size="sm"
+                          variant={active ? "default" : "outline"}
+                          className={
+                            active
+                              ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
+                              : ""
+                          }
+                          onClick={() => setFallbackSize({ w: s.w, h: s.h })}
+                        >
+                          {s.w}×{s.h}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-1 justify-center overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
@@ -407,10 +462,10 @@ const AssetFormModal = ({
                     transform: `scale(${scale})`,
                   }}
                 >
-                  {/* Default frame as background (logos only) */}
-                  {kind === "logo" && defaultFrameUrl && (
+                  {/* Selected frame as background (logos only) */}
+                  {kind === "logo" && selectedFrame?.imageUrl && (
                     <img
-                      src={defaultFrameUrl}
+                      src={selectedFrame.imageUrl}
                       alt="frame background"
                       draggable={false}
                       className="absolute left-0 top-0 select-none pointer-events-none"
