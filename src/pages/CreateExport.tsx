@@ -154,7 +154,7 @@ const CreateExport = () => {
   const setFormatBgColor = (formatId: string, color: string | null) =>
     setExportSettings((p) => ({
       ...p,
-      formatBgColors: { ...p.formatBgColors, [formatId]: color },
+      formatBgColors: { ...(p.formatBgColors ?? {}), [formatId]: color },
     }));
 
   const resolveBgColor = (formatId: string) => formatBgColors[formatId] ?? masterBgColor;
