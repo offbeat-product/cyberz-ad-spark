@@ -11,6 +11,7 @@ export interface FrameData {
 
 export interface BasicData {
   title: string;
+  mediaId: string;
   media: string;
   copyright: string;
 }
