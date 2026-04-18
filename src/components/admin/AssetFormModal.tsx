@@ -60,7 +60,7 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
   position:
     kind === "frame"
       ? { x: 0, y: 0, w: 1080, h: 1350 }
-      : { x: 40, y: 40, w: 200, h: 80 },
+      : { x: 840, y: 1250, w: 200, h: 80 },
   isDefault: false,
 });
 
