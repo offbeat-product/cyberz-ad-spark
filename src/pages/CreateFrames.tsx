@@ -161,9 +161,9 @@ const CreateFrames = () => {
         const dataUrl = await readFileAsDataUrl(files[i]);
         newFrames.push({
           id: `f${Date.now()}_${i}`,
-          display: 2.0,
-          transitionTime: 0.3,
-          transition: "フェード",
+          display: mediaDefaults.display,
+          transitionTime: mediaDefaults.transitionTime,
+          transition: mediaDefaults.transition,
           image: dataUrl,
           name: files[i].name,
         });
