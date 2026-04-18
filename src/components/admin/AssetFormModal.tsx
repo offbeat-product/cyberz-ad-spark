@@ -330,7 +330,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">プレビュー</span>
               <span className="text-xs text-muted-foreground">
-                {form.position.w}×{form.position.h}
+                {canvasW}×{canvasH}
               </span>
             </div>
             <div className="flex flex-1 justify-center overflow-hidden min-h-0">
@@ -338,7 +338,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
                 ref={canvasRef}
                 className="relative overflow-hidden rounded-lg"
                 style={{
-                  aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
+                  aspectRatio: `${canvasW} / ${canvasH}`,
                   width: "100%",
                   maxHeight: "100%",
                   border: "1px solid #e0e0e0",
@@ -350,11 +350,25 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
                   ref={stageRef}
                   className="absolute left-0 top-0 origin-top-left"
                   style={{
-                    width: Math.max(form.position.w, 1),
-                    height: Math.max(form.position.h, 1),
+                    width: canvasW,
+                    height: canvasH,
                     transform: `scale(${scale})`,
                   }}
                 >
+                  {/* Default frame as background (logos only) */}
+                  {kind === "logo" && defaultFrameUrl && (
+                    <img
+                      src={defaultFrameUrl}
+                      alt="frame background"
+                      draggable={false}
+                      className="absolute left-0 top-0 select-none pointer-events-none"
+                      style={{
+                        width: canvasW,
+                        height: canvasH,
+                        objectFit: "contain",
+                      }}
+                    />
+                  )}
                   {form.imageUrl && (
                     <img
                       src={form.imageUrl}
