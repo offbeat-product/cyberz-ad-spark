@@ -642,10 +642,12 @@ const CreateFrames = () => {
                           <div
                             className="absolute select-none pointer-events-none"
                             style={{
-                              left: 8,
-                              bottom: 8,
+                              ...(copyrightPos === "bottom-left" && { left: 8, bottom: 8 }),
+                              ...(copyrightPos === "bottom-right" && { right: 8, bottom: 8 }),
+                              ...(copyrightPos === "top-left" && { left: 8, top: 8 }),
+                              ...(copyrightPos === "top-right" && { right: 8, top: 8 }),
                               color: "#FFFFFF",
-                              fontSize: 14,
+                              fontSize: copyrightSize,
                               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                             }}
                           >
