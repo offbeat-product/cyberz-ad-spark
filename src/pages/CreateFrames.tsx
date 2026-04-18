@@ -102,10 +102,10 @@ const CreateFrames = () => {
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
   const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
     switch (p) {
-      case "bottom-left": return { x: 2, y: 98 };
-      case "bottom-right": return { x: 98, y: 98 };
-      case "top-left": return { x: 2, y: 2 };
-      case "top-right": return { x: 98, y: 2 };
+      case "bottom-left": return { x: 1, y: 99 };
+      case "bottom-right": return { x: 99, y: 99 };
+      case "top-left": return { x: 1, y: 1 };
+      case "top-right": return { x: 99, y: 1 };
     }
   };
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
@@ -659,11 +659,21 @@ const CreateFrames = () => {
                             // Push history snapshot once at drag start
                             pushHistory(startCoord);
                             (e.target as Element).setPointerCapture?.(e.pointerId);
+                            const elRect = e.currentTarget.getBoundingClientRect();
+                            const elWpct = (elRect.width / rect.width) * 100;
+                            const elHpct = (elRect.height / rect.height) * 100;
                             const onMove = (ev: PointerEvent) => {
                               const dx = ((ev.clientX - startX) / rect.width) * 100;
                               const dy = ((ev.clientY - startY) / rect.height) * 100;
-                              const nx = Math.max(0, Math.min(100, startCoord.x + dx));
-                              const ny = Math.max(0, Math.min(100, startCoord.y + dy));
+                              let nx = startCoord.x + dx;
+                              let ny = startCoord.y + dy;
+                              // Clamp so the element stays fully inside the canvas based on current anchor
+                              const aH = nx < 50 ? "left" : "right";
+                              const aV = ny < 50 ? "top" : "bottom";
+                              if (aH === "left") nx = Math.max(0, Math.min(100 - elWpct, nx));
+                              else nx = Math.max(elWpct, Math.min(100, nx));
+                              if (aV === "top") ny = Math.max(0, Math.min(100 - elHpct, ny));
+                              else ny = Math.max(elHpct, Math.min(100, ny));
                               setCopyrightCoordState({ x: nx, y: ny });
                             };
                             const onUp = () => {
