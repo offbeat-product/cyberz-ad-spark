@@ -100,7 +100,32 @@ const CreateFrames = () => {
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
+  const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
+    switch (p) {
+      case "bottom-left": return { x: 2, y: 98 };
+      case "bottom-right": return { x: 98, y: 98 };
+      case "top-left": return { x: 2, y: 2 };
+      case "top-right": return { x: 98, y: 2 };
+    }
+  };
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
+  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>(() =>
+    presetToCoord("bottom-left"),
+  );
+  // Undo/redo history (past + future stacks of coords, max 20 each)
+  const undoStackRef = useRef<{ x: number; y: number }[]>([]);
+  const redoStackRef = useRef<{ x: number; y: number }[]>([]);
+  const pushHistory = (prev: { x: number; y: number }) => {
+    undoStackRef.current.push(prev);
+    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+    redoStackRef.current = [];
+  };
+  const setCopyrightCoord = (next: { x: number; y: number }, recordHistory = true) => {
+    setCopyrightCoordState((curr) => {
+      if (recordHistory) pushHistory(curr);
+      return next;
+    });
+  };
   const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
   const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
   const [logoId, setLogoId] = useState<string>("");
@@ -165,6 +190,49 @@ const CreateFrames = () => {
     const ro = new ResizeObserver(compute);
     ro.observe(el);
     return () => ro.disconnect();
+  }, []);
+
+  // Stage ref (the inner 1080xN scaled stage) for copyright drag math
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  const undoCopyright = () => {
+    const prev = undoStackRef.current.pop();
+    if (!prev) return;
+    setCopyrightCoordState((curr) => {
+      redoStackRef.current.push(curr);
+      if (redoStackRef.current.length > 20) redoStackRef.current.shift();
+      return prev;
+    });
+  };
+  const redoCopyright = () => {
+    const next = redoStackRef.current.pop();
+    if (!next) return;
+    setCopyrightCoordState((curr) => {
+      undoStackRef.current.push(curr);
+      if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+      return next;
+    });
+  };
+
+  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (target && target.isContentEditable) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undoCopyright();
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        redoCopyright();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   // Text settings shortcuts from context
@@ -564,24 +632,65 @@ const CreateFrames = () => {
                           </div>
                         )}
 
-                        {/* ⑥ Copyright */}
-                        {showCopyright && basic.copyright && (
-                          <div
-                            className="absolute select-none pointer-events-none"
-                            style={{
-                              ...(copyrightPos === "bottom-left" && { left: 8, bottom: 8 }),
-                              ...(copyrightPos === "bottom-right" && { right: 8, bottom: 8 }),
-                              ...(copyrightPos === "top-left" && { left: 8, top: 8 }),
-                              ...(copyrightPos === "top-right" && { right: 8, top: 8 }),
-                              color: copyrightColor,
-                              fontFamily: copyrightFont,
-                              fontSize: copyrightSize,
-                              textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-                            }}
-                          >
-                            {basic.copyright}
-                          </div>
-                        )}
+                        {/* ⑥ Copyright (draggable) */}
+                        {showCopyright && basic.copyright && (() => {
+                          // Anchor: based on which edge is closest, so pos% maps to a corner
+                          const anchorH = copyrightCoord.x < 50 ? "left" : "right";
+                          const anchorV = copyrightCoord.y < 50 ? "top" : "bottom";
+                          const transformX = anchorH === "left" ? "0%" : "-100%";
+                          const transformY = anchorV === "top" ? "0%" : "-100%";
+                          const positionStyle: React.CSSProperties = {
+                            [anchorH === "left" ? "left" : "right"]:
+                              `${anchorH === "left" ? copyrightCoord.x : 100 - copyrightCoord.x}%`,
+                            [anchorV === "top" ? "top" : "bottom"]:
+                              `${anchorV === "top" ? copyrightCoord.y : 100 - copyrightCoord.y}%`,
+                            transform: `translate(${transformX}, ${transformY})`,
+                          };
+
+                          const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const stageEl = e.currentTarget.parentElement; // inner comic area
+                            if (!stageEl) return;
+                            const rect = stageEl.getBoundingClientRect();
+                            const startX = e.clientX;
+                            const startY = e.clientY;
+                            const startCoord = copyrightCoord;
+                            // Push history snapshot once at drag start
+                            pushHistory(startCoord);
+                            (e.target as Element).setPointerCapture?.(e.pointerId);
+                            const onMove = (ev: PointerEvent) => {
+                              const dx = ((ev.clientX - startX) / rect.width) * 100;
+                              const dy = ((ev.clientY - startY) / rect.height) * 100;
+                              const nx = Math.max(0, Math.min(100, startCoord.x + dx));
+                              const ny = Math.max(0, Math.min(100, startCoord.y + dy));
+                              setCopyrightCoordState({ x: nx, y: ny });
+                            };
+                            const onUp = () => {
+                              window.removeEventListener("pointermove", onMove);
+                              window.removeEventListener("pointerup", onUp);
+                            };
+                            window.addEventListener("pointermove", onMove);
+                            window.addEventListener("pointerup", onUp);
+                          };
+
+                          return (
+                            <div
+                              onPointerDown={onPointerDown}
+                              className="absolute select-none cursor-grab active:cursor-grabbing whitespace-nowrap"
+                              style={{
+                                ...positionStyle,
+                                color: copyrightColor,
+                                fontFamily: copyrightFont,
+                                fontSize: copyrightSize,
+                                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+                                touchAction: "none",
+                              }}
+                            >
+                              {basic.copyright}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -756,7 +865,11 @@ const CreateFrames = () => {
                             <button
                               key={p.id}
                               type="button"
-                              onClick={() => setCopyrightPos(p.id)}
+                              onClick={() => {
+                                pushHistory(copyrightCoord);
+                                setCopyrightPos(p.id);
+                                setCopyrightCoordState(presetToCoord(p.id));
+                              }}
                               className={cn(
                                 "rounded px-2 py-1 text-xs border transition-colors",
                                 active
