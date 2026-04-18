@@ -2,60 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ad Gen CyberZ — Cyberpunk neon design system. All colors HSL. */
+/* Ad Gen — Clean white SaaS design system. All colors HSL. */
 
 @layer base {
   :root {
-    --background: 240 30% 5%;
-    --foreground: 180 100% 95%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
-    --card: 240 30% 8%;
-    --card-foreground: 180 100% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
 
-    --popover: 240 30% 8%;
-    --popover-foreground: 180 100% 95%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 315 100% 60%;
-    --primary-foreground: 240 30% 5%;
-    --primary-glow: 315 100% 70%;
+    /* Brand green #1D9E75 */
+    --primary: 158 69% 37%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 180 100% 50%;
-    --secondary-foreground: 240 30% 5%;
+    /* Brand orange #EF9F27 */
+    --secondary: 35 86% 54%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 240 20% 15%;
-    --muted-foreground: 240 10% 65%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 270 100% 65%;
-    --accent-foreground: 240 30% 5%;
+    --accent: 158 69% 37%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 90% 60%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 270 50% 25%;
-    --input: 240 20% 12%;
-    --ring: 315 100% 60%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 158 69% 37%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(315 100% 60%), hsl(270 100% 65%), hsl(180 100% 50%));
-    --gradient-hero: radial-gradient(ellipse at top, hsl(315 100% 60% / 0.25), transparent 60%),
-                     radial-gradient(ellipse at bottom, hsl(180 100% 50% / 0.2), transparent 60%);
-    --gradient-text: linear-gradient(90deg, hsl(315 100% 70%), hsl(180 100% 60%));
-
-    --shadow-neon: 0 0 30px hsl(315 100% 60% / 0.5), 0 0 80px hsl(270 100% 65% / 0.3);
-    --shadow-cyan: 0 0 25px hsl(180 100% 50% / 0.45);
-    --shadow-card: 0 10px 40px -10px hsl(315 100% 60% / 0.3);
-
-    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-    --sidebar-background: 240 30% 7%;
-    --sidebar-foreground: 180 100% 95%;
-    --sidebar-primary: 315 100% 60%;
-    --sidebar-primary-foreground: 240 30% 5%;
-    --sidebar-accent: 240 20% 15%;
-    --sidebar-accent-foreground: 180 100% 95%;
-    --sidebar-border: 270 50% 25%;
-    --sidebar-ring: 315 100% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 158 69% 37%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 158 69% 37%;
   }
 }
 
@@ -64,57 +54,15 @@
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
-    background-image:
-      linear-gradient(hsl(270 50% 25% / 0.15) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(270 50% 25% / 0.15) 1px, transparent 1px);
-    background-size: 50px 50px;
+    font-family: 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4 {
-    font-family: 'Orbitron', 'Inter', sans-serif;
-    letter-spacing: -0.02em;
+    @apply text-foreground;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
-}
-
-@layer utilities {
-  .text-gradient {
-    background: var(--gradient-text);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .bg-hero-glow {
-    background-image: var(--gradient-hero);
-  }
-
-  .shadow-neon {
-    box-shadow: var(--shadow-neon);
-  }
-
-  .shadow-cyan {
-    box-shadow: var(--shadow-cyan);
-  }
-
-  .border-neon {
-    border: 1px solid hsl(var(--primary) / 0.5);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(315 100% 60% / 0.4), 0 0 40px hsl(270 100% 65% / 0.2); }
-  50% { box-shadow: 0 0 35px hsl(315 100% 60% / 0.7), 0 0 70px hsl(270 100% 65% / 0.4); }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
-}
-
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
 }
