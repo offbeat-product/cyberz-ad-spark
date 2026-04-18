@@ -101,6 +101,10 @@ const AdminMedia = () => {
   const [masterOpen, setMasterOpen] = useState(false);
   const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
   const [masterForm, setMasterForm] = useState<Omit<MediaMaster, "id">>(blankMaster());
+  // Wizard: 1 = basic info, 2 = frames/logos.
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+  // Holds the in-progress master id once step 1 completes.
+  const [wizardMasterId, setWizardMasterId] = useState<string | null>(null);
 
   // Asset modal
   const [assetModal, setAssetModal] = useState<{
@@ -122,6 +126,8 @@ const AdminMedia = () => {
   const openCreateMaster = () => {
     setMasterForm(blankMaster());
     setEditingMasterId(null);
+    setWizardStep(1);
+    setWizardMasterId(null);
     setMasterOpen(true);
   };
 
@@ -129,21 +135,41 @@ const AdminMedia = () => {
     const { id, ...rest } = m;
     setMasterForm(rest);
     setEditingMasterId(id);
+    setWizardStep(1);
+    setWizardMasterId(id);
     setMasterOpen(true);
   };
 
-  const saveMaster = () => {
+  // Step 1 → save (or update) and move to step 2.
+  const submitStep1 = () => {
     if (!masterForm.name.trim()) {
       toast.error("媒体名を入力してください");
       return;
     }
     if (editingMasterId) {
-      setMedia((p) => p.map((m) => (m.id === editingMasterId ? { id: editingMasterId, ...masterForm } : m)));
-      toast.success("媒体を更新しました");
+      setMedia((p) =>
+        p.map((m) => (m.id === editingMasterId ? { id: editingMasterId, ...masterForm } : m)),
+      );
+      setWizardMasterId(editingMasterId);
     } else {
-      setMedia((p) => [...p, { id: uid(), ...masterForm }]);
-      toast.success("媒体を追加しました");
+      const newId = uid();
+      setMedia((p) => [...p, { id: newId, ...masterForm }]);
+      setWizardMasterId(newId);
     }
+    setWizardStep(2);
+  };
+
+  const finishWizard = (showToast: boolean) => {
+    if (wizardMasterId && !editingMasterId) {
+      setExpanded((prev) => new Set(prev).add(wizardMasterId));
+    }
+    if (showToast) {
+      toast.success(editingMasterId ? "媒体を更新しました" : "媒体を追加しました");
+    }
+    setMasterOpen(false);
+  };
+
+  const cancelWizard = () => {
     setMasterOpen(false);
   };
 
