@@ -110,9 +110,12 @@ const CreateFrames = () => {
     transition: selectedMaster ? transitionKeyToLabel[selectedMaster.transition] : "フェード",
   };
   const masterBgColor = selectedMaster?.bgColor ?? "#000000";
-  const defaultFrameAsset = selectedMaster
-    ? masterFrames.find((f) => f.mediaMasterId === selectedMaster.id && f.isDefault)
-    : undefined;
+  const mediaFrameAssets = selectedMaster
+    ? masterFrames.filter((f) => f.mediaMasterId === selectedMaster.id)
+    : [];
+  // Prefer the explicit default; fall back to first registered frame for this media
+  const defaultFrameAsset =
+    mediaFrameAssets.find((f) => f.isDefault) ?? mediaFrameAssets[0];
   const availableLogos = selectedMaster
     ? masterLogos.filter((l) => l.mediaMasterId === selectedMaster.id)
     : [];
@@ -414,7 +417,7 @@ const CreateFrames = () => {
             <div className="mb-4 w-full flex items-start justify-between gap-3 flex-wrap">
               {/* Left: layer toggles + logo dropdown */}
               <div className="flex items-start gap-4 flex-wrap">
-                <label className={cn(
+                <div className={cn(
                   "flex items-center gap-2 text-xs",
                   defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
                 )}>
@@ -423,8 +426,8 @@ const CreateFrames = () => {
                     onCheckedChange={setShowFrame}
                     disabled={!defaultFrameAsset}
                   />
-                  {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
-                </label>
+                  <span>{defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">ロゴ</span>
                   <Select
@@ -446,25 +449,23 @@ const CreateFrames = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-                    コピーライトを表示
+                    <span>コピーライトを表示</span>
                     {showCopyright && (
-                      <>
-                        <div className="flex items-center gap-2 ml-2">
-                          <Slider
-                            value={[copyrightSize]}
-                            min={8}
-                            max={24}
-                            step={1}
-                            onValueChange={(v) => setCopyrightSize(v[0])}
-                            className="w-24"
-                          />
-                          <span className="text-xs tabular-nums w-10">{copyrightSize}px</span>
-                        </div>
-                      </>
+                      <div className="flex items-center gap-2 ml-2">
+                        <Slider
+                          value={[copyrightSize]}
+                          min={8}
+                          max={100}
+                          step={1}
+                          onValueChange={(v) => setCopyrightSize(v[0])}
+                          className="w-32"
+                        />
+                        <span className="text-xs tabular-nums w-12">{copyrightSize}px</span>
+                      </div>
                     )}
-                  </label>
+                  </div>
                   {showCopyright && (
                     <div className="flex items-center gap-1">
                       {([
@@ -525,6 +526,14 @@ const CreateFrames = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* TEMP DEBUG */}
+            <div className="mb-3 w-full rounded border border-dashed border-amber-500/50 bg-amber-500/5 p-2 text-[11px] text-muted-foreground font-mono">
+              <div>選択中の媒体ID: {basic.mediaId || "(未選択)"}</div>
+              <div>media登録数: {media.length} / 全frame件数: {masterFrames.length}</div>
+              <div>この媒体のframe件数: {mediaFrameAssets.length}</div>
+              <div>defaultFrameAsset: {defaultFrameAsset ? `${defaultFrameAsset.name} (isDefault=${defaultFrameAsset.isDefault}, hasImage=${!!defaultFrameAsset.imageUrl})` : "なし"}</div>
             </div>
 
             {(() => {
