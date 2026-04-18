@@ -234,21 +234,57 @@ const CreateExport = () => {
     toast.success(`ランダム選択: ${randomTrack.name}`);
   };
 
-  const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    if (!ACCEPTED_AUDIO.includes(file.type)) {
-      toast.error("対応していない形式です", { description: "MP3 / WAV / M4A をアップロードしてください" });
-      return;
-    }
-    if (file.size > MAX_AUDIO_SIZE) {
-      toast.error("ファイルサイズが大きすぎます", { description: "50MB以下のファイルをアップロードしてください" });
-      return;
-    }
-    setPendingUploadFile(file);
+  const enqueueFiles = (fileList: FileList | File[] | null) => {
+    if (!fileList) return;
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
+
+    const isAudio = (f: File) =>
+      ACCEPTED_AUDIO.includes(f.type) || /\.(mp3|wav|m4a)$/i.test(f.name);
+
+    const validFiles = files.filter(isAudio);
+    const skipped = files.length - validFiles.length;
+    if (skipped > 0) toast.error(`${skipped}件のファイルは未対応の形式のためスキップしました`);
+
+    const sizeOk = validFiles.filter((f) => {
+      if (f.size > MAX_AUDIO_SIZE) {
+        toast.error(`${f.name} は50MBを超えているためアップロードできません`);
+        return false;
+      }
+      return true;
+    });
+    if (sizeOk.length === 0) return;
+
+    const [first, ...rest] = sizeOk;
+    setUploadQueue((q) => [...q, ...rest]);
     setUploadAsTemplate("no");
     setUploadTemplateCategory("");
+    setPendingUploadFile(first);
+  };
+
+  const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
+    enqueueFiles(e.target.files);
+    e.target.value = "";
+  };
+
+  const handleBgmDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setBgmDragOver(false);
+    enqueueFiles(e.dataTransfer.files);
+  };
+
+  const advanceQueue = () => {
+    setUploadQueue((q) => {
+      if (q.length === 0) {
+        setPendingUploadFile(null);
+        return q;
+      }
+      const [next, ...rest] = q;
+      setUploadAsTemplate("no");
+      setUploadTemplateCategory("");
+      setPendingUploadFile(next);
+      return rest;
+    });
   };
 
   const confirmUpload = () => {
@@ -259,15 +295,19 @@ const CreateExport = () => {
     }
     const url = URL.createObjectURL(pendingUploadFile);
     const newBgm: UploadedBGM = {
-      id: `upload-${Date.now()}`,
+      id: `upload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: pendingUploadFile.name,
       url,
       isTemplate: uploadAsTemplate === "yes",
       templateCategory: uploadAsTemplate === "yes" ? uploadTemplateCategory : undefined,
     };
     setUploadedBgms((prev) => [...prev, newBgm]);
-    setPendingUploadFile(null);
-    toast.success("BGMをアップロードしました");
+    toast.success(`アップロード完了: ${pendingUploadFile.name}`);
+    advanceQueue();
+  };
+
+  const cancelUpload = () => {
+    advanceQueue();
   };
 
   const removeUpload = (id: string) => {
