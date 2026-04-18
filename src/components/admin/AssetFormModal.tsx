@@ -32,6 +32,8 @@ interface Props {
   kind: "frame" | "logo";
   initial?: AssetFormValue | null;
   onSave: (value: AssetFormValue) => void;
+  /** Default frame image to render behind logos in the preview (logo kind only). */
+  defaultFrameUrl?: string | null;
 }
 
 const blank = (kind: "frame" | "logo"): AssetFormValue => ({
