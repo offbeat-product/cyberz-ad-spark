@@ -15,9 +15,13 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    /* Brand green #1D9E75 */
-    --primary: 158 69% 37%;
+    /* Brand gradient #409EEA → #6C81FC */
+    --primary: 209 81% 58%;
     --primary-foreground: 0 0% 100%;
+    --primary-from: 209 81% 58%; /* #409EEA */
+    --primary-to: 230 96% 71%;   /* #6C81FC */
+    --gradient-primary: linear-gradient(90deg, hsl(var(--primary-from)), hsl(var(--primary-to)));
+    --gradient-primary-hover: linear-gradient(90deg, hsl(209 71% 48%), hsl(230 76% 61%));
 
     /* Brand orange #EF9F27 */
     --secondary: 35 86% 54%;
