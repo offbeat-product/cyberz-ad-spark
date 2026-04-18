@@ -854,13 +854,18 @@ const CreateFrames = () => {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-xs">位置</Label>
-                      <div className="flex items-center gap-1 flex-wrap">
+                      <Label className="text-xs">位置（プリセット）</Label>
+                      <div className="grid grid-cols-3 gap-1">
                         {([
-                          { id: "bottom-left", label: "左下" },
-                          { id: "bottom-right", label: "右下" },
                           { id: "top-left", label: "左上" },
+                          { id: "top-center", label: "上" },
                           { id: "top-right", label: "右上" },
+                          { id: "middle-left", label: "左" },
+                          { id: "middle-center", label: "中央" },
+                          { id: "middle-right", label: "右" },
+                          { id: "bottom-left", label: "左下" },
+                          { id: "bottom-center", label: "下" },
+                          { id: "bottom-right", label: "右下" },
                         ] as const).map((p) => {
                           const active = copyrightPos === p.id;
                           return (
@@ -873,7 +878,7 @@ const CreateFrames = () => {
                                 setCopyrightCoordState(applyPreset(p.id));
                               }}
                               className={cn(
-                                "rounded px-2 py-1 text-xs border transition-colors",
+                                "aspect-square rounded border text-[10px] transition-colors",
                                 active
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "bg-background border-border text-muted-foreground hover:bg-muted",
@@ -883,6 +888,41 @@ const CreateFrames = () => {
                             </button>
                           );
                         })}
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">座標(px)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">X (0〜{CANVAS_W})</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={CANVAS_W}
+                            value={Math.round(copyrightCoord.x)}
+                            onChange={(e) => {
+                              const nx = Number(e.target.value);
+                              if (Number.isNaN(nx)) return;
+                              pushHistory(copyrightCoord);
+                              setCopyrightCoordState(clampCoord(nx, copyrightCoord.y));
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Y (0〜{CANVAS_H})</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={CANVAS_H}
+                            value={Math.round(copyrightCoord.y)}
+                            onChange={(e) => {
+                              const ny = Number(e.target.value);
+                              if (Number.isNaN(ny)) return;
+                              pushHistory(copyrightCoord);
+                              setCopyrightCoordState(clampCoord(copyrightCoord.x, ny));
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </>
