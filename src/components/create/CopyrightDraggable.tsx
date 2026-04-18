@@ -37,17 +37,30 @@ const CopyrightDraggable = ({
   onDrag,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
+  const lastSizeRef = useRef<{ w: number; h: number }>({ w: -1, h: -1 });
+  const onSizeChangeRef = useRef(onSizeChange);
+  useEffect(() => {
+    onSizeChangeRef.current = onSizeChange;
+  }, [onSizeChange]);
 
-  // Report measured size in canvas px whenever font/text changes.
+  const reportSize = (rectW: number, rectH: number) => {
+    const w = scale > 0 ? rectW / scale : rectW;
+    const h = scale > 0 ? rectH / scale : rectH;
+    const last = lastSizeRef.current;
+    // Only notify when size actually changed (avoid feedback loop)
+    if (Math.abs(last.w - w) < 0.5 && Math.abs(last.h - h) < 0.5) return;
+    lastSizeRef.current = { w, h };
+    onSizeChangeRef.current(w, h);
+  };
+
+  // Report measured size in canvas px whenever font/text/scale changes.
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    // Convert displayed px back to canvas px
-    const w = scale > 0 ? rect.width / scale : rect.width;
-    const h = scale > 0 ? rect.height / scale : rect.height;
-    onSizeChange(w, h);
-  }, [text, font, fontSize, scale, onSizeChange]);
+    reportSize(rect.width, rect.height);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, font, fontSize, scale]);
 
   // Also react to runtime size changes (e.g. font load)
   useEffect(() => {
@@ -56,13 +69,12 @@ const CopyrightDraggable = ({
     const ro = new ResizeObserver((entries) => {
       const r = entries[0]?.contentRect;
       if (!r) return;
-      const w = scale > 0 ? r.width / scale : r.width;
-      const h = scale > 0 ? r.height / scale : r.height;
-      onSizeChange(w, h);
+      reportSize(r.width, r.height);
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [scale, onSizeChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scale]);
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
