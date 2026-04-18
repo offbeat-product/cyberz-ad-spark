@@ -193,7 +193,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[900px] max-w-[95vw] h-[85vh] max-h-[800px] overflow-hidden p-0 sm:rounded-lg">
+      <DialogContent className="w-[900px] max-w-[95vw] h-[90vh] max-h-[90vh] overflow-hidden p-0 sm:rounded-lg">
         <div className="grid h-full grid-cols-2">
           <div className="flex h-full flex-col overflow-hidden border-r border-border">
             <div className="flex-1 overflow-y-auto p-6">
