@@ -482,13 +482,21 @@ const AssetSection = ({
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 {a.imageUrl ? (
-                  <img
-                    src={a.imageUrl}
-                    alt={a.name}
-                    className="h-10 w-10 rounded border border-border object-cover flex-shrink-0"
-                  />
+                  <div
+                    className="flex items-center justify-center rounded border border-border flex-shrink-0 overflow-hidden"
+                    style={{ width: 80, height: 80, backgroundColor: "#f8f8f8" }}
+                  >
+                    <img
+                      src={a.imageUrl}
+                      alt={a.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
                 ) : (
-                  <div className="h-10 w-10 rounded border border-dashed border-border flex-shrink-0" />
+                  <div
+                    className="rounded border border-dashed border-border flex-shrink-0"
+                    style={{ width: 80, height: 80, backgroundColor: "#f8f8f8" }}
+                  />
                 )}
                 <div className="min-w-0">
                   <div className="text-sm font-medium truncate">{a.name}</div>
