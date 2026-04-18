@@ -642,75 +642,27 @@ const CreateFrames = () => {
                           </div>
                         )}
 
-                        {/* ⑥ Copyright (draggable) */}
-                        {showCopyright && basic.copyright && (() => {
-                          // Anchor: based on which edge is closest, so pos% maps to a corner
-                          const anchorH = copyrightCoord.x < 50 ? "left" : "right";
-                          const anchorV = copyrightCoord.y < 50 ? "top" : "bottom";
-                          const transformX = anchorH === "left" ? "0%" : "-100%";
-                          const transformY = anchorV === "top" ? "0%" : "-100%";
-                          const positionStyle: React.CSSProperties = {
-                            [anchorH === "left" ? "left" : "right"]:
-                              `${anchorH === "left" ? copyrightCoord.x : 100 - copyrightCoord.x}%`,
-                            [anchorV === "top" ? "top" : "bottom"]:
-                              `${anchorV === "top" ? copyrightCoord.y : 100 - copyrightCoord.y}%`,
-                            transform: `translate(${transformX}, ${transformY})`,
-                          };
-
-                          const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const stageEl = e.currentTarget.parentElement; // inner comic area
-                            if (!stageEl) return;
-                            const rect = stageEl.getBoundingClientRect();
-                            const startX = e.clientX;
-                            const startY = e.clientY;
-                            const startCoord = copyrightCoord;
-                            // Push history snapshot once at drag start
-                            pushHistory(startCoord);
-                            (e.target as Element).setPointerCapture?.(e.pointerId);
-                            const elRect = e.currentTarget.getBoundingClientRect();
-                            const elWpct = (elRect.width / rect.width) * 100;
-                            const elHpct = (elRect.height / rect.height) * 100;
-                            const onMove = (ev: PointerEvent) => {
-                              const dx = ((ev.clientX - startX) / rect.width) * 100;
-                              const dy = ((ev.clientY - startY) / rect.height) * 100;
-                              let nx = startCoord.x + dx;
-                              let ny = startCoord.y + dy;
-                              // Clamp so the element stays fully inside the canvas based on current anchor
-                              const aH = nx < 50 ? "left" : "right";
-                              const aV = ny < 50 ? "top" : "bottom";
-                              if (aH === "left") nx = Math.max(0, Math.min(100 - elWpct, nx));
-                              else nx = Math.max(elWpct, Math.min(100, nx));
-                              if (aV === "top") ny = Math.max(0, Math.min(100 - elHpct, ny));
-                              else ny = Math.max(elHpct, Math.min(100, ny));
-                              setCopyrightCoordState({ x: nx, y: ny });
-                            };
-                            const onUp = () => {
-                              window.removeEventListener("pointermove", onMove);
-                              window.removeEventListener("pointerup", onUp);
-                            };
-                            window.addEventListener("pointermove", onMove);
-                            window.addEventListener("pointerup", onUp);
-                          };
-
-                          return (
-                            <div
-                              onPointerDown={onPointerDown}
-                              className="absolute select-none cursor-grab active:cursor-grabbing whitespace-nowrap"
-                              style={{
-                                ...positionStyle,
-                                color: copyrightColor,
-                                fontFamily: copyrightFont,
-                                fontSize: copyrightSize,
-                                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-                                touchAction: "none",
-                              }}
-                            >
-                              {basic.copyright}
-                            </div>
-                          );
-                        })()}
+                        {/* ⑥ Copyright (draggable, px-based in canvas coords) */}
+                        {showCopyright && basic.copyright && (
+                          <CopyrightDraggable
+                            text={basic.copyright}
+                            color={copyrightColor}
+                            font={copyrightFont}
+                            fontSize={copyrightSize}
+                            x={copyrightCoord.x}
+                            y={copyrightCoord.y}
+                            canvasW={CANVAS_W}
+                            canvasH={CANVAS_H}
+                            scale={ratio}
+                            onSizeChange={(w, h) => {
+                              copyrightSizeRef.current = { w, h };
+                              // Re-clamp current coord so element stays in bounds when font size grows
+                              setCopyrightCoordState((curr) => clampCoord(curr.x, curr.y));
+                            }}
+                            onDragStart={() => pushHistory(copyrightCoord)}
+                            onDrag={(nx, ny) => setCopyrightCoordState(clampCoord(nx, ny))}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
