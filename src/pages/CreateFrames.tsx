@@ -356,42 +356,46 @@ const CreateFrames = () => {
               {completedCount}枚の画像をアップロードしました
             </div>
           )}
+          </div>
 
-          <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
+          {/* Scrollable frame list */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+            <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
 
-          {frames.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-background/40 p-6 text-center text-sm text-muted-foreground">
-              まだコマがありません。上のエリアから画像をアップロードしてください。
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-4">
-                  {frames.map((f, idx) => (
-                    <SortableFrameCard
-                      key={f.id}
-                      frame={f}
-                      index={idx}
-                      total={frames.length}
-                      selected={f.id === selectedId}
-                      onSelect={() => setSelectedId(f.id)}
-                      onUpdate={(patch) => updateFrame(f.id, patch)}
-                      onMoveUp={() => moveFrame(idx, idx - 1)}
-                      onMoveDown={() => moveFrame(idx, idx + 1)}
-                      onDelete={() => requestDelete(f.id)}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
+            {frames.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border bg-background/40 p-6 text-center text-sm text-muted-foreground">
+                まだコマがありません。上のエリアから画像をアップロードしてください。
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-4">
+                    {frames.map((f, idx) => (
+                      <SortableFrameCard
+                        key={f.id}
+                        frame={f}
+                        index={idx}
+                        total={frames.length}
+                        selected={f.id === selectedId}
+                        onSelect={() => setSelectedId(f.id)}
+                        onUpdate={(patch) => updateFrame(f.id, patch)}
+                        onMoveUp={() => moveFrame(idx, idx - 1)}
+                        onMoveDown={() => moveFrame(idx, idx + 1)}
+                        onDelete={() => requestDelete(f.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
 
-          <button
-            onClick={addFrame}
-            className="w-full rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus className="h-4 w-4" /> コマを追加
-          </button>
+            <button
+              onClick={addFrame}
+              className="w-full rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> コマを追加
+            </button>
+          </div>
         </div>
 
         <AlertDialog open={pendingDeleteId !== null} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
