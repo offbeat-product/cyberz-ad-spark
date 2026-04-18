@@ -483,33 +483,35 @@ const CreateFrames = () => {
                         )}
 
                         {/* ⑤ Text */}
-                        <div
-                          className="absolute -translate-x-1/2 -translate-y-1/2 px-6 py-2 select-none"
-                          style={{
-                            left: `${pos.x}%`,
-                            top: `${pos.y}%`,
-                            color,
-                            fontFamily: font,
-                            fontSize: fontSize,
-                            writingMode: vertical ? "vertical-rl" : "horizontal-tb",
-                            WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
-                            background: bgEnabled
-                              ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
-                                  .toString(16)
-                                  .padStart(2, "0")}`
-                              : "transparent",
-                            mixBlendMode:
-                              blend === "通常"
-                                ? "normal"
-                                : blend === "乗算"
-                                  ? "multiply"
-                                  : blend === "スクリーン"
-                                    ? "screen"
-                                    : "overlay",
-                          }}
-                        >
-                          {text || "テキスト"}
-                        </div>
+                        {textVisible && (
+                          <div
+                            className="absolute -translate-x-1/2 -translate-y-1/2 px-6 py-2 select-none"
+                            style={{
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
+                              color,
+                              fontFamily: font,
+                              fontSize: fontSize,
+                              writingMode: vertical ? "vertical-rl" : "horizontal-tb",
+                              WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+                              background: bgEnabled
+                                ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
+                                    .toString(16)
+                                    .padStart(2, "0")}`
+                                : "transparent",
+                              mixBlendMode:
+                                blend === "通常"
+                                  ? "normal"
+                                  : blend === "乗算"
+                                    ? "multiply"
+                                    : blend === "スクリーン"
+                                      ? "screen"
+                                      : "overlay",
+                            }}
+                          >
+                            {text || "テキスト"}
+                          </div>
+                        )}
 
                         {/* ⑥ Copyright */}
                         {basic.copyright && (
