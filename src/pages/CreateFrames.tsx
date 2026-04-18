@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
@@ -591,340 +592,377 @@ const CreateFrames = () => {
         </div>
 
         {/* ===== Right column (30%): Settings panel (scrollable) ===== */}
-        <div className="overflow-y-auto p-5 space-y-6 bg-background min-h-0">
-          {/* ① Text settings */}
-          <section className="space-y-5">
-            <h2 className="text-sm font-semibold">テキスト設定</h2>
-
-            <div className="flex gap-2">
-              <Button
-                variant={!vertical ? "default" : "outline"}
-                size="sm"
-                onClick={() => patchText({ vertical: false })}
-                className="flex-1"
-              >
-                <AlignLeft /> 横書き
-              </Button>
-              <Button
-                variant={vertical ? "default" : "outline"}
-                size="sm"
-                onClick={() => patchText({ vertical: true })}
-                className="flex-1"
-              >
-                <AlignCenter /> 縦書き
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">テキスト</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">テキストを表示</span>
-                  <Switch
-                    checked={textVisible}
-                    onCheckedChange={(v) => patchText({ visible: v })}
-                  />
+        <div className="overflow-y-auto p-4 bg-background min-h-0">
+          <Accordion type="multiple" className="space-y-2">
+            {/* ① Frame settings */}
+            <AccordionItem value="frame" className="border border-border rounded-md overflow-hidden bg-background">
+              <AccordionTrigger className="px-3 py-2 bg-muted/40 hover:bg-muted hover:no-underline">
+                <div className="flex-1 flex items-center justify-between gap-3 text-left">
+                  <span className="text-sm font-semibold">フレーム設定</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {defaultFrameAsset && showFrame ? defaultFrameAsset.name : "未設定"}
+                  </span>
                 </div>
-              </div>
-              <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs">位置（プリセット）</Label>
-              <div className="grid grid-cols-3 gap-1">
-                {gridPositions.map((g) => (
-                  <button
-                    key={g.label}
-                    onClick={() => patchText({ pos: { x: g.x, y: g.y } })}
-                    className={cn(
-                      "aspect-square rounded border text-[10px]",
-                      pos.x === g.x && pos.y === g.y
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-background border-border hover:bg-muted",
-                    )}
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-3 space-y-3">
+                <div className={cn(
+                  "flex items-center gap-2 text-xs",
+                  defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
+                )}>
+                  <Switch
+                    checked={showFrame && !!defaultFrameAsset}
+                    onCheckedChange={setShowFrame}
+                    disabled={!defaultFrameAsset}
+                  />
+                  <span className="whitespace-nowrap">
+                    {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">フレーム選択</Label>
+                  <Select
+                    value={defaultFrameAsset?.id ?? ""}
+                    onValueChange={() => {}}
+                    disabled={mediaFrameAssets.length === 0}
                   >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                    <SelectTrigger>
+                      <SelectValue placeholder="フレーム未登録" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mediaFrameAssets.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">X (%)</Label>
-                <Input
-                  type="number"
-                  value={pos.x}
-                  onChange={(e) => patchText({ pos: { ...pos, x: Number(e.target.value) } })}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Y (%)</Label>
-                <Input
-                  type="number"
-                  value={pos.y}
-                  onChange={(e) => patchText({ pos: { ...pos, y: Number(e.target.value) } })}
-                />
-              </div>
-            </div>
+            {/* ② Logo settings */}
+            <AccordionItem value="logo" className="border border-border rounded-md overflow-hidden bg-background">
+              <AccordionTrigger className="px-3 py-2 bg-muted/40 hover:bg-muted hover:no-underline">
+                <div className="flex-1 flex items-center justify-between gap-3 text-left">
+                  <span className="text-sm font-semibold">ロゴ設定</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {!selectedMaster
+                      ? "未設定"
+                      : logoId === "none" || !activeLogoAsset
+                        ? "ロゴなし"
+                        : activeLogoAsset.name}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-3 space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">ロゴ選択</Label>
+                  <Select value={logoId} onValueChange={setLogoId} disabled={!selectedMaster}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="ロゴなし" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ロゴなし</SelectItem>
+                      {availableLogos.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
 
-            <div className="space-y-2">
-              <Label className="text-xs">フォント</Label>
-              <Select value={font} onValueChange={(v) => patchText({ font: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {fontOptions.map((f) => (
-                    <SelectItem key={f} value={f}>
-                      {f}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* ③ Copyright settings */}
+            <AccordionItem value="copyright" className="border border-border rounded-md overflow-hidden bg-background">
+              <AccordionTrigger className="px-3 py-2 bg-muted/40 hover:bg-muted hover:no-underline">
+                <div className="flex-1 flex items-center justify-between gap-3 text-left">
+                  <span className="text-sm font-semibold">コピーライト設定</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {showCopyright ? `表示中 ${copyrightSize}px` : "非表示"}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-3 space-y-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+                  <span className="whitespace-nowrap">コピーライトを表示</span>
+                </div>
+                {showCopyright && (
+                  <>
+                    <div className="space-y-1">
+                      <Label className="text-xs">フォントサイズ：{copyrightSize}px</Label>
+                      <Slider
+                        value={[copyrightSize]}
+                        min={8}
+                        max={100}
+                        step={1}
+                        onValueChange={(v) => setCopyrightSize(v[0])}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">フォント</Label>
+                      <Select value={copyrightFont} onValueChange={setCopyrightFont}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">カラー</Label>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input
+                          type="color"
+                          value={copyrightColor}
+                          onChange={(e) => setCopyrightColor(e.target.value)}
+                          className="h-9 w-14 cursor-pointer rounded border border-border bg-background p-0"
+                        />
+                        <div className="flex items-center gap-1">
+                          {[
+                            { c: "#FFFFFF", label: "白" },
+                            { c: "#000000", label: "黒" },
+                            { c: "#888888", label: "グレー" },
+                          ].map((p) => (
+                            <button
+                              key={p.c}
+                              type="button"
+                              onClick={() => setCopyrightColor(p.c)}
+                              title={p.label}
+                              className={cn(
+                                "h-7 w-7 rounded border transition-shadow",
+                                copyrightColor.toLowerCase() === p.c.toLowerCase()
+                                  ? "border-primary ring-2 ring-primary/40"
+                                  : "border-border",
+                              )}
+                              style={{ backgroundColor: p.c }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">位置</Label>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {([
+                          { id: "bottom-left", label: "左下" },
+                          { id: "bottom-right", label: "右下" },
+                          { id: "top-left", label: "左上" },
+                          { id: "top-right", label: "右上" },
+                        ] as const).map((p) => {
+                          const active = copyrightPos === p.id;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setCopyrightPos(p.id)}
+                              className={cn(
+                                "rounded px-2 py-1 text-xs border transition-colors",
+                                active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border text-muted-foreground hover:bg-muted",
+                              )}
+                            >
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </AccordionContent>
+            </AccordionItem>
 
-            <div className="space-y-2">
-              <Label className="text-xs">フォントサイズ：{fontSize}px</Label>
-              <Slider
-                value={[fontSize]}
-                onValueChange={(v) => patchText({ fontSize: v[0] })}
-                min={12}
-                max={120}
-                step={1}
-              />
-            </div>
+            {/* ④ Text settings */}
+            <AccordionItem value="text" className="border border-border rounded-md overflow-hidden bg-background">
+              <AccordionTrigger className="px-3 py-2 bg-muted/40 hover:bg-muted hover:no-underline">
+                <div className="flex-1 flex items-center justify-between gap-3 text-left">
+                  <span className="text-sm font-semibold">テキスト設定</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">
+                    {text ? (text.length > 10 ? text.slice(0, 10) + "…" : text) : "未入力"}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-3 space-y-5">
+                <div className="flex gap-2">
+                  <Button
+                    variant={!vertical ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => patchText({ vertical: false })}
+                    className="flex-1"
+                  >
+                    <AlignLeft /> 横書き
+                  </Button>
+                  <Button
+                    variant={vertical ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => patchText({ vertical: true })}
+                    className="flex-1"
+                  >
+                    <AlignCenter /> 縦書き
+                  </Button>
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs">文字色</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => patchText({ color: e.target.value })}
-                  className="h-9 w-14 rounded border border-border cursor-pointer"
-                />
-                <Input value={color} onChange={(e) => patchText({ color: e.target.value })} />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">テキスト</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">テキストを表示</span>
+                      <Switch
+                        checked={textVisible}
+                        onCheckedChange={(v) => patchText({ visible: v })}
+                      />
+                    </div>
+                  </div>
+                  <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs">描画モード</Label>
-              <Select value={blend} onValueChange={(v) => patchText({ blend: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {blendModes.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">位置（プリセット）</Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {gridPositions.map((g) => (
+                      <button
+                        key={g.label}
+                        onClick={() => patchText({ pos: { x: g.x, y: g.y } })}
+                        className={cn(
+                          "aspect-square rounded border text-[10px]",
+                          pos.x === g.x && pos.y === g.y
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:bg-muted",
+                        )}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="space-y-2 border-t border-border pt-4">
-              <Label className="text-xs">枠線</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={strokeColor}
-                  onChange={(e) => patchText({ strokeColor: e.target.value })}
-                  className="h-9 w-14 rounded border border-border cursor-pointer"
-                />
-                <Input
-                  type="number"
-                  value={strokeWidth}
-                  onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
-                  min={0}
-                  max={20}
-                  className="w-20"
-                />
-                <span className="text-xs text-muted-foreground">px</span>
-              </div>
-            </div>
-
-            <div className="space-y-3 border-t border-border pt-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs">背景帯</Label>
-                <Switch checked={bgEnabled} onCheckedChange={(v) => patchText({ bgEnabled: v })} />
-              </div>
-              {bgEnabled && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => patchText({ bgColor: e.target.value })}
-                      className="h-9 w-14 rounded border border-border cursor-pointer"
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">X (%)</Label>
+                    <Input
+                      type="number"
+                      value={pos.x}
+                      onChange={(e) => patchText({ pos: { ...pos, x: Number(e.target.value) } })}
                     />
-                    <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value })} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">透明度：{bgOpacity}%</Label>
-                    <Slider
-                      value={[bgOpacity]}
-                      onValueChange={(v) => patchText({ bgOpacity: v[0] })}
-                      min={0}
-                      max={100}
-                      step={1}
+                    <Label className="text-xs">Y (%)</Label>
+                    <Input
+                      type="number"
+                      value={pos.y}
+                      onChange={(e) => patchText({ pos: { ...pos, y: Number(e.target.value) } })}
                     />
                   </div>
-                </>
-              )}
-            </div>
-          </section>
-
-          {/* ② Frame settings */}
-          <section className="space-y-3 border-t border-border pt-5">
-            <h2 className="text-sm font-semibold">フレーム設定</h2>
-            <div className={cn(
-              "flex items-center gap-2 text-xs",
-              defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
-            )}>
-              <Switch
-                checked={showFrame && !!defaultFrameAsset}
-                onCheckedChange={setShowFrame}
-                disabled={!defaultFrameAsset}
-              />
-              <span className="whitespace-nowrap">
-                {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
-              </span>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">フレーム選択</Label>
-              <Select
-                value={defaultFrameAsset?.id ?? ""}
-                onValueChange={() => {}}
-                disabled={mediaFrameAssets.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="フレーム未登録" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mediaFrameAssets.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </section>
-
-          {/* ③ Logo settings */}
-          <section className="space-y-3 border-t border-border pt-5">
-            <h2 className="text-sm font-semibold">ロゴ設定</h2>
-            <div className="space-y-1">
-              <Label className="text-xs">ロゴ選択</Label>
-              <Select value={logoId} onValueChange={setLogoId} disabled={!selectedMaster}>
-                <SelectTrigger>
-                  <SelectValue placeholder="ロゴなし" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">ロゴなし</SelectItem>
-                  {availableLogos.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </section>
-
-          {/* ④ Copyright settings */}
-          <section className="space-y-3 border-t border-border pt-5">
-            <h2 className="text-sm font-semibold">コピーライト設定</h2>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-              <span className="whitespace-nowrap">コピーライトを表示</span>
-            </div>
-            {showCopyright && (
-              <>
-                <div className="space-y-1">
-                  <Label className="text-xs">フォントサイズ：{copyrightSize}px</Label>
-                  <Slider
-                    value={[copyrightSize]}
-                    min={8}
-                    max={100}
-                    step={1}
-                    onValueChange={(v) => setCopyrightSize(v[0])}
-                  />
                 </div>
-                <div className="space-y-1">
+
+                <div className="space-y-2">
                   <Label className="text-xs">フォント</Label>
-                  <Select value={copyrightFont} onValueChange={setCopyrightFont}>
+                  <Select value={font} onValueChange={(v) => patchText({ font: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
+                      {fontOptions.map((f) => (
                         <SelectItem key={f} value={f}>{f}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label className="text-xs">カラー</Label>
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <Label className="text-xs">フォントサイズ：{fontSize}px</Label>
+                  <Slider
+                    value={[fontSize]}
+                    onValueChange={(v) => patchText({ fontSize: v[0] })}
+                    min={12}
+                    max={120}
+                    step={1}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">文字色</Label>
+                  <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      value={copyrightColor}
-                      onChange={(e) => setCopyrightColor(e.target.value)}
-                      className="h-9 w-14 cursor-pointer rounded border border-border bg-background p-0"
+                      value={color}
+                      onChange={(e) => patchText({ color: e.target.value })}
+                      className="h-9 w-14 rounded border border-border cursor-pointer"
                     />
-                    <div className="flex items-center gap-1">
-                      {[
-                        { c: "#FFFFFF", label: "白" },
-                        { c: "#000000", label: "黒" },
-                        { c: "#888888", label: "グレー" },
-                      ].map((p) => (
-                        <button
-                          key={p.c}
-                          type="button"
-                          onClick={() => setCopyrightColor(p.c)}
-                          title={p.label}
-                          className={cn(
-                            "h-7 w-7 rounded border transition-shadow",
-                            copyrightColor.toLowerCase() === p.c.toLowerCase()
-                              ? "border-primary ring-2 ring-primary/40"
-                              : "border-border",
-                          )}
-                          style={{ backgroundColor: p.c }}
-                        />
+                    <Input value={color} onChange={(e) => patchText({ color: e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">描画モード</Label>
+                  <Select value={blend} onValueChange={(v) => patchText({ blend: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {blendModes.map((b) => (
+                        <SelectItem key={b} value={b}>{b}</SelectItem>
                       ))}
-                    </div>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2 border-t border-border pt-4">
+                  <Label className="text-xs">枠線</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={strokeColor}
+                      onChange={(e) => patchText({ strokeColor: e.target.value })}
+                      className="h-9 w-14 rounded border border-border cursor-pointer"
+                    />
+                    <Input
+                      type="number"
+                      value={strokeWidth}
+                      onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
+                      min={0}
+                      max={20}
+                      className="w-20"
+                    />
+                    <span className="text-xs text-muted-foreground">px</span>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">位置</Label>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {([
-                      { id: "bottom-left", label: "左下" },
-                      { id: "bottom-right", label: "右下" },
-                      { id: "top-left", label: "左上" },
-                      { id: "top-right", label: "右上" },
-                    ] as const).map((p) => {
-                      const active = copyrightPos === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setCopyrightPos(p.id)}
-                          className={cn(
-                            "rounded px-2 py-1 text-xs border transition-colors",
-                            active
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-background border-border text-muted-foreground hover:bg-muted",
-                          )}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
+
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">背景帯</Label>
+                    <Switch checked={bgEnabled} onCheckedChange={(v) => patchText({ bgEnabled: v })} />
                   </div>
+                  {bgEnabled && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={bgColor}
+                          onChange={(e) => patchText({ bgColor: e.target.value })}
+                          className="h-9 w-14 rounded border border-border cursor-pointer"
+                        />
+                        <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value })} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">透明度：{bgOpacity}%</Label>
+                        <Slider
+                          value={[bgOpacity]}
+                          onValueChange={(v) => patchText({ bgOpacity: v[0] })}
+                          min={0}
+                          max={100}
+                          step={1}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
-              </>
-            )}
-          </section>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </div>
     </>
