@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ImageDropzone from "@/components/admin/ImageDropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +33,15 @@ export interface AssetFormValue {
   isDefault: boolean;
 }
 
+export interface FrameOption {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  width: number;
+  height: number;
+  isDefault?: boolean;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -34,6 +50,8 @@ interface Props {
   onSave: (value: AssetFormValue) => void;
   /** Default frame image to render behind logos in the preview (logo kind only). */
   defaultFrameUrl?: string | null;
+  /** All frames available for selection in the logo preview. */
+  availableFrames?: FrameOption[];
 }
 
 const blank = (kind: "frame" | "logo"): AssetFormValue => ({
@@ -48,7 +66,15 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
 
 const HISTORY_MAX = 20;
 
-const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFrameUrl }: Props) => {
+const AssetFormModal = ({
+  open,
+  onOpenChange,
+  kind,
+  initial,
+  onSave,
+  defaultFrameUrl,
+  availableFrames = [],
+}: Props) => {
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -59,6 +85,11 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
   const [future, setFuture] = useState<Box[]>([]);
   const lastCommittedRef = useRef<Box | null>(null);
 
+  // Logo preview: which frame is selected ("none" or frame id), and fallback canvas size when no frames.
+  const hasFrames = availableFrames.length > 0;
+  const [selectedFrameId, setSelectedFrameId] = useState<string>("none");
+  const [fallbackSize, setFallbackSize] = useState<{ w: number; h: number }>({ w: 1080, h: 1350 });
+
   useEffect(() => {
     if (open) {
       const start = initial ?? blank(kind);
@@ -66,12 +97,33 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
       setHistory([]);
       setFuture([]);
       lastCommittedRef.current = start.position;
+      // Default to the default frame if available.
+      const def = availableFrames.find((f) => f.isDefault) ?? availableFrames[0];
+      setSelectedFrameId(def ? def.id : "none");
+      setFallbackSize({ w: 1080, h: 1350 });
     }
-  }, [open, initial, kind]);
+  }, [open, initial, kind, availableFrames]);
 
-  // Canvas dims: logos always preview on a fixed 1080x1350 stage.
-  const canvasW = kind === "logo" ? 1080 : Math.max(form.position.w, 1);
-  const canvasH = kind === "logo" ? 1350 : Math.max(form.position.h, 1);
+  const selectedFrame = useMemo(
+    () => availableFrames.find((f) => f.id === selectedFrameId) ?? null,
+    [availableFrames, selectedFrameId],
+  );
+
+  // Canvas dims:
+  // - frame kind: the form's own w/h
+  // - logo kind: selected frame's w/h, else fallback size
+  const canvasW =
+    kind === "logo"
+      ? selectedFrame
+        ? selectedFrame.width
+        : fallbackSize.w
+      : Math.max(form.position.w, 1);
+  const canvasH =
+    kind === "logo"
+      ? selectedFrame
+        ? selectedFrame.height
+        : fallbackSize.h
+      : Math.max(form.position.h, 1);
 
   // Recompute scale to fit canvas inside parent (both width and height)
   useEffect(() => {
@@ -327,12 +379,67 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
           </div>
 
           <div className="flex h-full flex-col overflow-hidden bg-white p-6">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <span className="text-sm font-semibold">プレビュー</span>
               <span className="text-xs text-muted-foreground">
                 {canvasW}×{canvasH}
               </span>
             </div>
+
+            {/* Logo: frame selector or canvas size selector */}
+            {kind === "logo" && (
+              <div className="mb-3">
+                {hasFrames ? (
+                  <Select value={selectedFrameId} onValueChange={setSelectedFrameId}>
+                    <SelectTrigger
+                      className={
+                        selectedFrameId !== "none"
+                          ? "border-transparent text-white bg-gradient-to-r from-[#409EEA] to-[#6C81FC] [&>svg]:text-white"
+                          : ""
+                      }
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">フレームなし</SelectItem>
+                      {availableFrames.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                          {f.isDefault ? "（デフォルト）" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { w: 1080, h: 1350 },
+                      { w: 1080, h: 1920 },
+                      { w: 1080, h: 1080 },
+                    ] as const).map((s) => {
+                      const active = fallbackSize.w === s.w && fallbackSize.h === s.h;
+                      return (
+                        <Button
+                          key={`${s.w}x${s.h}`}
+                          type="button"
+                          size="sm"
+                          variant={active ? "default" : "outline"}
+                          className={
+                            active
+                              ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
+                              : ""
+                          }
+                          onClick={() => setFallbackSize({ w: s.w, h: s.h })}
+                        >
+                          {s.w}×{s.h}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-1 justify-center overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
@@ -355,10 +462,10 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
                     transform: `scale(${scale})`,
                   }}
                 >
-                  {/* Default frame as background (logos only) */}
-                  {kind === "logo" && defaultFrameUrl && (
+                  {/* Selected frame as background (logos only) */}
+                  {kind === "logo" && selectedFrame?.imageUrl && (
                     <img
-                      src={defaultFrameUrl}
+                      src={selectedFrame.imageUrl}
                       alt="frame background"
                       draggable={false}
                       className="absolute left-0 top-0 select-none pointer-events-none"

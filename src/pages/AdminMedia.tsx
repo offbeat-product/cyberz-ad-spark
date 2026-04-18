@@ -420,12 +420,19 @@ const AdminMedia = () => {
         kind={assetModal.kind}
         initial={assetModal.initial}
         onSave={saveAsset}
-        defaultFrameUrl={
+        availableFrames={
           assetModal.kind === "logo"
-            ? frames.find((f) => f.mediaMasterId === assetModal.mediaId && f.isDefault)?.imageUrl ??
-              frames.find((f) => f.mediaMasterId === assetModal.mediaId)?.imageUrl ??
-              null
-            : null
+            ? frames
+                .filter((f) => f.mediaMasterId === assetModal.mediaId)
+                .map((f) => ({
+                  id: f.id,
+                  name: f.name,
+                  imageUrl: f.imageUrl,
+                  width: f.position.w,
+                  height: f.position.h,
+                  isDefault: f.isDefault,
+                }))
+            : []
         }
       />
     </>
