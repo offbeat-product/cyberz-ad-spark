@@ -141,12 +141,25 @@ type UploadedBGM = {
 
 const CreateExport = () => {
   const navigate = useNavigate();
-  const { exportSettings, setExportSettings } = useCreateFlow();
-  const { selectedFormats, bgColor, showFrame, showLogo } = exportSettings;
+  const { basic, exportSettings, setExportSettings } = useCreateFlow();
+  const { media } = useMediaMasters();
+  const selectedMaster = media.find((m) => m.id === basic.mediaId);
+  const masterBgColor = selectedMaster?.bgColor ?? "#000000";
+  const { selectedFormats, bgColor, showFrame, showLogo, formatBgColors } = exportSettings;
 
   const setBgColor = (v: string) => setExportSettings((p) => ({ ...p, bgColor: v }));
   const setShowFrame = (v: boolean) => setExportSettings((p) => ({ ...p, showFrame: v }));
   const setShowLogo = (v: boolean) => setExportSettings((p) => ({ ...p, showLogo: v }));
+
+  const setFormatBgColor = (formatId: string, color: string | null) =>
+    setExportSettings((p) => ({
+      ...p,
+      formatBgColors: { ...p.formatBgColors, [formatId]: color },
+    }));
+
+  const resolveBgColor = (formatId: string) => formatBgColors[formatId] ?? masterBgColor;
+  const isOverridden = (formatId: string) =>
+    formatBgColors[formatId] !== null && formatBgColors[formatId] !== undefined;
 
   const toggleFormat = (id: string) => {
     setExportSettings((p) => ({
