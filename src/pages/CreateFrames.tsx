@@ -94,7 +94,7 @@ const CreateFrames = () => {
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
 
   // Resolve defaults from the selected media master (basic.media holds the name)
-  const selectedMaster = media.find((m) => m.name === basic.media);
+  const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const mediaDefaults = {
     display: selectedMaster?.displaySec ?? 2.0,
     transitionTime: selectedMaster?.switchSec ?? 0.3,
