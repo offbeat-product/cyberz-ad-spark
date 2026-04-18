@@ -145,7 +145,7 @@ const CreateExport = () => {
   const { media } = useMediaMasters();
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const masterBgColor = selectedMaster?.bgColor ?? "#000000";
-  const { selectedFormats, bgColor, showFrame, showLogo, formatBgColors } = exportSettings;
+  const { selectedFormats, bgColor, showFrame, showLogo, formatBgColors = {} } = exportSettings;
 
   const setBgColor = (v: string) => setExportSettings((p) => ({ ...p, bgColor: v }));
   const setShowFrame = (v: boolean) => setExportSettings((p) => ({ ...p, showFrame: v }));
@@ -154,7 +154,7 @@ const CreateExport = () => {
   const setFormatBgColor = (formatId: string, color: string | null) =>
     setExportSettings((p) => ({
       ...p,
-      formatBgColors: { ...p.formatBgColors, [formatId]: color },
+      formatBgColors: { ...(p.formatBgColors ?? {}), [formatId]: color },
     }));
 
   const resolveBgColor = (formatId: string) => formatBgColors[formatId] ?? masterBgColor;
