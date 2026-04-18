@@ -70,9 +70,8 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
   // Recompute scale to fit canvas inside parent (both width and height)
   useEffect(() => {
     const compute = () => {
-      const wrap = canvasRef.current?.parentElement;
       const canvas = canvasRef.current;
-      if (!wrap || !canvas) return;
+      if (!canvas) return;
       const cw = canvas.clientWidth;
       if (cw > 0) setScale(cw / Math.max(form.position.w, 1));
     };
