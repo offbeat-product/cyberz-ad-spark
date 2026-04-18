@@ -33,6 +33,15 @@ export interface AssetFormValue {
   isDefault: boolean;
 }
 
+export interface FrameOption {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  width: number;
+  height: number;
+  isDefault?: boolean;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -41,6 +50,8 @@ interface Props {
   onSave: (value: AssetFormValue) => void;
   /** Default frame image to render behind logos in the preview (logo kind only). */
   defaultFrameUrl?: string | null;
+  /** All frames available for selection in the logo preview. */
+  availableFrames?: FrameOption[];
 }
 
 const blank = (kind: "frame" | "logo"): AssetFormValue => ({
