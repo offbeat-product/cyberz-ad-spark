@@ -528,6 +528,14 @@ const CreateFrames = () => {
               </div>
             </div>
 
+            {/* TEMP DEBUG */}
+            <div className="mb-3 w-full rounded border border-dashed border-amber-500/50 bg-amber-500/5 p-2 text-[11px] text-muted-foreground font-mono">
+              <div>選択中の媒体ID: {basic.mediaId || "(未選択)"}</div>
+              <div>media登録数: {media.length} / 全frame件数: {masterFrames.length}</div>
+              <div>この媒体のframe件数: {mediaFrameAssets.length}</div>
+              <div>defaultFrameAsset: {defaultFrameAsset ? `${defaultFrameAsset.name} (isDefault=${defaultFrameAsset.isDefault}, hasImage=${!!defaultFrameAsset.imageUrl})` : "なし"}</div>
+            </div>
+
             {(() => {
               const sizes = {
                 main: { w: 1080, h: 1350 },
