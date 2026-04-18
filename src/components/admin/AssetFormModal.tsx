@@ -44,34 +44,98 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
   isDefault: false,
 });
 
+const HISTORY_MAX = 20;
+
 const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) => {
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
-  const fileRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
 
-  useEffect(() => {
-    if (open) setForm(initial ?? blank(kind));
-  }, [open, initial, kind]);
+  // Undo/redo history of position
+  const [history, setHistory] = useState<Box[]>([]);
+  const [future, setFuture] = useState<Box[]>([]);
+  const lastCommittedRef = useRef<Box | null>(null);
 
   useEffect(() => {
+    if (open) {
+      const start = initial ?? blank(kind);
+      setForm(start);
+      setHistory([]);
+      setFuture([]);
+      lastCommittedRef.current = start.position;
+    }
+  }, [open, initial, kind]);
+
+  // Recompute scale to fit canvas inside parent (both width and height)
+  useEffect(() => {
     const compute = () => {
-      const el = stageRef.current?.parentElement;
-      if (!el) return;
-      setScale(el.clientWidth / CANVAS_W);
+      const wrap = canvasRef.current?.parentElement;
+      const canvas = canvasRef.current;
+      if (!wrap || !canvas) return;
+      const cw = canvas.clientWidth;
+      if (cw > 0) setScale(cw / Math.max(form.position.w, 1));
     };
     compute();
     const ro = new ResizeObserver(compute);
-    if (stageRef.current?.parentElement) ro.observe(stageRef.current.parentElement);
+    if (canvasRef.current) ro.observe(canvasRef.current);
     return () => ro.disconnect();
-  }, [open]);
+  }, [open, form.position.w, form.position.h]);
 
-  const handleFile = (file: File | undefined) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((p) => ({ ...p, imageUrl: reader.result as string }));
-    reader.readAsDataURL(file);
+  const commitPosition = (next: Box) => {
+    const prev = lastCommittedRef.current;
+    if (prev && (prev.x !== next.x || prev.y !== next.y || prev.w !== next.w || prev.h !== next.h)) {
+      setHistory((h) => {
+        const nh = [...h, prev];
+        return nh.length > HISTORY_MAX ? nh.slice(nh.length - HISTORY_MAX) : nh;
+      });
+      setFuture([]);
+    }
+    lastCommittedRef.current = next;
   };
+
+  const undo = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      const prev = h[h.length - 1];
+      const current = lastCommittedRef.current;
+      if (current) setFuture((f) => [current, ...f].slice(0, HISTORY_MAX));
+      lastCommittedRef.current = prev;
+      setForm((p) => ({ ...p, position: prev }));
+      return h.slice(0, -1);
+    });
+  };
+
+  const redo = () => {
+    setFuture((f) => {
+      if (f.length === 0) return f;
+      const next = f[0];
+      const current = lastCommittedRef.current;
+      if (current) setHistory((h) => [...h, current].slice(-HISTORY_MAX));
+      lastCommittedRef.current = next;
+      setForm((p) => ({ ...p, position: next }));
+      return f.slice(1);
+    });
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      if (!meta) return;
+      const key = e.key.toLowerCase();
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((key === "z" && e.shiftKey) || key === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
 
   const startDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -93,9 +157,23 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
     const up = () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
+      // Snapshot current position into history
+      // Read latest position via setForm callback
+      setForm((p) => {
+        commitPosition(p.position);
+        return p;
+      });
     };
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
+  };
+
+  const updatePosField = (k: keyof Box, v: number) => {
+    setForm((p) => {
+      const next = { ...p.position, [k]: v };
+      commitPosition(next);
+      return { ...p, position: next };
+    });
   };
 
   const submit = () => {
