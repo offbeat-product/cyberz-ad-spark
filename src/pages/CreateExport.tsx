@@ -761,7 +761,7 @@ const CreateExport = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingUploadFile(null)}>
+            <Button variant="outline" onClick={cancelUpload}>
               キャンセル
             </Button>
             <Button onClick={confirmUpload}>アップロード</Button>
