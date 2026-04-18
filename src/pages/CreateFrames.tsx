@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import SortableFrameCard from "@/components/create/SortableFrameCard";
+import CopyrightDraggable from "@/components/create/CopyrightDraggable";
 import {
   AlertDialog,
   AlertDialogAction,
