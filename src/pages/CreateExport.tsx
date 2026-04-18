@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Volume2,
   Trash2,
+  Dices,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
@@ -203,6 +204,19 @@ const CreateExport = () => {
     setSelectedBgmId(id);
   };
 
+  const handleRandomSelect = (categoryId: string) => {
+    const category = BGM_CATEGORIES.find((c) => c.id === categoryId);
+    if (!category || category.tracks.length === 0) {
+      toast.error("このジャンルには曲がありません");
+      return;
+    }
+    const candidates = category.tracks.filter((t) => t.id !== selectedBgmId);
+    const pool = candidates.length > 0 ? candidates : category.tracks;
+    const randomTrack = pool[Math.floor(Math.random() * pool.length)];
+    setSelectedBgmId(randomTrack.id);
+    toast.success(`ランダム選択: ${randomTrack.name}`);
+  };
+
   const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -282,6 +296,7 @@ const CreateExport = () => {
                 const Icon = cat.icon;
                 const isExpanded = expandedCategory === cat.id;
                 const hasSelectedFromCat = cat.tracks.some((t) => t.id === selectedBgmId) || (cat.id === "none" && selectedBgmId === "none");
+                const selectedTrackInCat = cat.tracks.find((t) => t.id === selectedBgmId);
                 return (
                   <div
                     key={cat.id}
@@ -292,33 +307,61 @@ const CreateExport = () => {
                         : "border-border bg-background",
                     )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (cat.id === "none") {
-                          setSelectedBgmId("none");
-                          stopPreview();
-                          setExpandedCategory(null);
-                          return;
-                        }
-                        setExpandedCategory(isExpanded ? null : cat.id);
-                      }}
-                      className="w-full flex items-center gap-3 p-4 text-left"
-                    >
-                      <Icon className={cn("h-5 w-5", hasSelectedFromCat ? "text-primary" : "text-muted-foreground")} />
-                      <span className="text-sm font-medium flex-1">{cat.label}</span>
+                    <div className="w-full flex items-center gap-3 p-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (cat.id === "none") {
+                            setSelectedBgmId("none");
+                            stopPreview();
+                            setExpandedCategory(null);
+                            return;
+                          }
+                          setExpandedCategory(isExpanded ? null : cat.id);
+                        }}
+                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                      >
+                        <Icon className={cn("h-5 w-5 shrink-0", hasSelectedFromCat ? "text-primary" : "text-muted-foreground")} />
+                        <span className="text-sm font-medium shrink-0">{cat.label}</span>
+                        {selectedTrackInCat && (
+                          <span className="text-xs text-primary truncate">{selectedTrackInCat.name}</span>
+                        )}
+                        <span className="flex-1" />
+                        {cat.tracks.length > 0 && (
+                          <span className="text-xs text-muted-foreground shrink-0">{cat.tracks.length}曲</span>
+                        )}
+                      </button>
                       {cat.tracks.length > 0 && (
                         <>
-                          <span className="text-xs text-muted-foreground">{cat.tracks.length}曲</span>
-                          <ChevronDown
-                            className={cn(
-                              "h-4 w-4 text-muted-foreground transition-transform",
-                              isExpanded && "rotate-180",
-                            )}
-                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRandomSelect(cat.id);
+                            }}
+                            title="ランダム選択"
+                          >
+                            <Dices className="h-4 w-4" />
+                          </Button>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedCategory(isExpanded ? null : cat.id)}
+                            className="p-1"
+                            aria-label="展開"
+                          >
+                            <ChevronDown
+                              className={cn(
+                                "h-4 w-4 text-muted-foreground transition-transform",
+                                isExpanded && "rotate-180",
+                              )}
+                            />
+                          </button>
                         </>
                       )}
-                    </button>
+                    </div>
                     {isExpanded && cat.tracks.length > 0 && (
                       <div className="border-t border-border p-2 space-y-1">
                         {cat.tracks.map((track) => {
