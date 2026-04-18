@@ -661,6 +661,7 @@ interface AssetSectionProps {
   kind: "frame" | "logo";
   assets: (Frame | Logo)[];
   disabled?: boolean;
+  hideHeader?: boolean;
   onAdd: () => void;
   onEdit: (a: Frame | Logo) => void;
   onDelete: (id: string) => void;
@@ -672,19 +673,22 @@ const AssetSection = ({
   kind,
   assets,
   disabled,
+  hideHeader,
   onAdd,
   onEdit,
   onDelete,
   onSetDefault,
 }: AssetSectionProps) => (
   <div className={`space-y-3 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-    <div className="flex items-center justify-between">
-      <h4 className="text-sm font-semibold">{title}</h4>
-      <Button size="sm" variant="outline" onClick={onAdd}>
-        <Plus className="h-3 w-3" />
-        {kind === "frame" ? "フレームを追加" : "ロゴを追加"}
-      </Button>
-    </div>
+    {!hideHeader && (
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold">{title}</h4>
+        <Button size="sm" variant="outline" onClick={onAdd}>
+          <Plus className="h-3 w-3" />
+          {kind === "frame" ? "フレームを追加" : "ロゴを追加"}
+        </Button>
+      </div>
+    )}
     {assets.length === 0 ? (
       <div className="rounded-md border border-dashed border-border bg-background py-6 text-center text-xs text-muted-foreground">
         まだ登録されていません
