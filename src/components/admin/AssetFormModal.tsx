@@ -126,22 +126,27 @@ const AssetFormModal = ({
   const canvasW = kind === "logo" ? canvasSize.w : Math.max(form.position.w, 1);
   const canvasH = kind === "logo" ? canvasSize.h : Math.max(form.position.h, 1);
 
-  // Recompute scale to fit canvas inside parent (both width and height)
+  // Compute canvas display size: width = parent inner width, height = aspect-derived,
+  // shrunk down only if exceeding parent height.
   useEffect(() => {
     const compute = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const cw = canvas.clientWidth;
-      const ch = canvas.clientHeight;
-      if (cw > 0 && ch > 0) {
-        const sx = cw / canvasW;
-        const sy = ch / canvasH;
-        setScale(Math.min(sx, sy));
+      const wrap = canvasWrapRef.current;
+      if (!wrap) return;
+      const pw = wrap.clientWidth;
+      const ph = wrap.clientHeight;
+      if (pw <= 0 || ph <= 0) return;
+      let w = pw;
+      let h = w * (canvasH / canvasW);
+      if (h > ph) {
+        h = ph;
+        w = h * (canvasW / canvasH);
       }
+      setDisplaySize({ w, h });
+      setScale(w / canvasW);
     };
     compute();
     const ro = new ResizeObserver(compute);
-    if (canvasRef.current) ro.observe(canvasRef.current);
+    if (canvasWrapRef.current) ro.observe(canvasWrapRef.current);
     return () => ro.disconnect();
   }, [open, canvasW, canvasH]);
 
