@@ -11,6 +11,7 @@ export interface FrameData {
 
 export interface BasicData {
   title: string;
+  mediaId: string;
   media: string;
   copyright: string;
 }
@@ -38,7 +39,7 @@ export interface ExportSettings {
   showLogo: boolean;
 }
 
-const defaultBasic: BasicData = { title: "", media: "", copyright: "" };
+const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
 
 const defaultText: TextSettings = {
   vertical: false,

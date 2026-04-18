@@ -12,29 +12,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateFlow } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
-
-const mediaOptions = [
-  "ピッコマ",
-  "コミックシーモア",
-  "MangaPlaza",
-  "ヤンジャン＋",
-  "Palcy",
-  "コミックDAYS",
-  "EbookRenta!",
-  "サンデーうぇぶり",
-  "まんが王国",
-  "マンガPark",
-];
 
 const CreateBasic = () => {
   const navigate = useNavigate();
   const { basic, setBasic, reset } = useCreateFlow();
+  const { media: mediaMasters } = useMediaMasters();
+  const hasMedia = mediaMasters.length > 0;
 
   const handleCancel = () => {
     reset();
     navigate("/");
+  };
+
+  const handleMediaChange = (id: string) => {
+    const selected = mediaMasters.find((m) => m.id === id);
+    setBasic((p) => ({ ...p, mediaId: id, media: selected?.name ?? "" }));
   };
 
   return (
@@ -57,20 +52,26 @@ const CreateBasic = () => {
           <div className="space-y-2">
             <Label>媒体</Label>
             <Select
-              value={basic.media}
-              onValueChange={(v) => setBasic((p) => ({ ...p, media: v }))}
+              value={basic.mediaId}
+              onValueChange={handleMediaChange}
+              disabled={!hasMedia}
             >
               <SelectTrigger>
-                <SelectValue placeholder="媒体を選択" />
+                <SelectValue placeholder={hasMedia ? "媒体を選択" : "媒体が登録されていません"} />
               </SelectTrigger>
               <SelectContent>
-                {mediaOptions.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
+                {mediaMasters.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {!hasMedia && (
+              <p className="text-xs text-muted-foreground">
+                媒体が登録されていません。媒体マスターから追加してください。
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
