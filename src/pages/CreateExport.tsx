@@ -716,7 +716,7 @@ const CreateExport = () => {
       </div>
 
       {/* Upload confirmation dialog */}
-      <Dialog open={!!pendingUploadFile} onOpenChange={(open) => !open && setPendingUploadFile(null)}>
+      <Dialog open={!!pendingUploadFile} onOpenChange={(open) => !open && cancelUpload()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>BGMをアップロード</DialogTitle>
