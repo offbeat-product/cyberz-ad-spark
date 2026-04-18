@@ -296,6 +296,7 @@ const CreateExport = () => {
                 const Icon = cat.icon;
                 const isExpanded = expandedCategory === cat.id;
                 const hasSelectedFromCat = cat.tracks.some((t) => t.id === selectedBgmId) || (cat.id === "none" && selectedBgmId === "none");
+                const selectedTrackInCat = cat.tracks.find((t) => t.id === selectedBgmId);
                 return (
                   <div
                     key={cat.id}
