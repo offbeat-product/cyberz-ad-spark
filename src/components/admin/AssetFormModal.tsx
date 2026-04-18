@@ -444,8 +444,8 @@ const AssetFormModal = ({
                 className="relative overflow-hidden rounded-lg"
                 style={{
                   aspectRatio: `${canvasW} / ${canvasH}`,
-                  width: "100%",
-                  maxHeight: "100%",
+                  height: "100%",
+                  maxWidth: "100%",
                   border: "1px solid #e0e0e0",
                   backgroundColor: "#f0f0f0",
                   alignSelf: "flex-start",
