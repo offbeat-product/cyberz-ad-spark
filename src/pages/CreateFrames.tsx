@@ -417,7 +417,7 @@ const CreateFrames = () => {
             <div className="mb-4 w-full flex items-start justify-between gap-3 flex-wrap">
               {/* Left: layer toggles + logo dropdown */}
               <div className="flex items-start gap-4 flex-wrap">
-                <label className={cn(
+                <div className={cn(
                   "flex items-center gap-2 text-xs",
                   defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
                 )}>
@@ -426,8 +426,8 @@ const CreateFrames = () => {
                     onCheckedChange={setShowFrame}
                     disabled={!defaultFrameAsset}
                   />
-                  {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
-                </label>
+                  <span>{defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">ロゴ</span>
                   <Select
