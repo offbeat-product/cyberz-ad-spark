@@ -55,13 +55,7 @@ const defaultText: TextSettings = {
   bgOpacity: 80,
 };
 
-const defaultFrames: FrameData[] = Array.from({ length: 5 }, (_, i) => ({
-  id: `f${i + 1}`,
-  display: 2.0,
-  transitionTime: 0.3,
-  transition: "フェード",
-  image: null,
-}));
+const defaultFrames: FrameData[] = [];
 
 const defaultExport: ExportSettings = {
   bgm: "fantasy",
