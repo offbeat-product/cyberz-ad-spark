@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import type { Box, Transition } from "@/components/admin/MediaPreview";
 import TransitionDemo from "@/components/admin/TransitionDemo";
 import AssetFormModal, { AssetFormValue } from "@/components/admin/AssetFormModal";
+import { useMediaMasters, type Frame, type Logo, type MediaMaster } from "@/hooks/useMediaMasters";
 
 const transitionLabels: Record<Transition, string> = {
   none: "なし",
