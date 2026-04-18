@@ -192,6 +192,49 @@ const CreateFrames = () => {
     return () => ro.disconnect();
   }, []);
 
+  // Stage ref (the inner 1080xN scaled stage) for copyright drag math
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  const undoCopyright = () => {
+    const prev = undoStackRef.current.pop();
+    if (!prev) return;
+    setCopyrightCoordState((curr) => {
+      redoStackRef.current.push(curr);
+      if (redoStackRef.current.length > 20) redoStackRef.current.shift();
+      return prev;
+    });
+  };
+  const redoCopyright = () => {
+    const next = redoStackRef.current.pop();
+    if (!next) return;
+    setCopyrightCoordState((curr) => {
+      undoStackRef.current.push(curr);
+      if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+      return next;
+    });
+  };
+
+  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (target && target.isContentEditable) return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undoCopyright();
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        redoCopyright();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Text settings shortcuts from context
   const {
     visible: textVisible,
