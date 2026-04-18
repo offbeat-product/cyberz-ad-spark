@@ -78,7 +78,9 @@ const AssetFormModal = ({
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
+  const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   // Undo/redo history of position
   const [history, setHistory] = useState<Box[]>([]);
@@ -124,22 +126,27 @@ const AssetFormModal = ({
   const canvasW = kind === "logo" ? canvasSize.w : Math.max(form.position.w, 1);
   const canvasH = kind === "logo" ? canvasSize.h : Math.max(form.position.h, 1);
 
-  // Recompute scale to fit canvas inside parent (both width and height)
+  // Compute canvas display size: width = parent inner width, height = aspect-derived,
+  // shrunk down only if exceeding parent height.
   useEffect(() => {
     const compute = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const cw = canvas.clientWidth;
-      const ch = canvas.clientHeight;
-      if (cw > 0 && ch > 0) {
-        const sx = cw / canvasW;
-        const sy = ch / canvasH;
-        setScale(Math.min(sx, sy));
+      const wrap = canvasWrapRef.current;
+      if (!wrap) return;
+      const pw = wrap.clientWidth;
+      const ph = wrap.clientHeight;
+      if (pw <= 0 || ph <= 0) return;
+      let w = pw;
+      let h = w * (canvasH / canvasW);
+      if (h > ph) {
+        h = ph;
+        w = h * (canvasW / canvasH);
       }
+      setDisplaySize({ w, h });
+      setScale(w / canvasW);
     };
     compute();
     const ro = new ResizeObserver(compute);
-    if (canvasRef.current) ro.observe(canvasRef.current);
+    if (canvasWrapRef.current) ro.observe(canvasWrapRef.current);
     return () => ro.disconnect();
   }, [open, canvasW, canvasH]);
 
@@ -438,17 +445,15 @@ const AssetFormModal = ({
               </div>
             )}
 
-            <div className="flex flex-1 justify-center overflow-hidden min-h-0">
+            <div ref={canvasWrapRef} className="flex flex-1 justify-center items-start overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
                 className="relative overflow-hidden rounded-lg"
                 style={{
-                  aspectRatio: `${canvasW} / ${canvasH}`,
-                  height: "100%",
-                  maxWidth: "100%",
+                  width: displaySize.w || "100%",
+                  height: displaySize.h || "auto",
                   border: "1px solid #e0e0e0",
                   backgroundColor: "#f0f0f0",
-                  alignSelf: "flex-start",
                 }}
               >
                 <div
@@ -460,7 +465,7 @@ const AssetFormModal = ({
                     transform: `scale(${scale})`,
                   }}
                 >
-                  {/* Selected frame as background (logos only) */}
+                  {/* Selected frame as background (logos only) — cover the whole canvas */}
                   {kind === "logo" && selectedFrame?.imageUrl && (
                     <img
                       src={selectedFrame.imageUrl}
@@ -470,7 +475,7 @@ const AssetFormModal = ({
                       style={{
                         width: canvasW,
                         height: canvasH,
-                        objectFit: "contain",
+                        objectFit: "cover",
                       }}
                     />
                   )}
