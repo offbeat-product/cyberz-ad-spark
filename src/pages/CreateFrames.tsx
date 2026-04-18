@@ -117,8 +117,26 @@ const CreateFrames = () => {
   const [uploadDone, setUploadDone] = useState(0);
   const [completedCount, setCompletedCount] = useState<number | null>(null);
 
+  // Preview area measurement (to fit canvas)
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+  const [previewAreaWidth, setPreviewAreaWidth] = useState(420);
+  const [previewAreaHeight, setPreviewAreaHeight] = useState(640);
+  useEffect(() => {
+    const el = previewAreaRef.current;
+    if (!el) return;
+    const compute = () => {
+      setPreviewAreaWidth(el.clientWidth);
+      setPreviewAreaHeight(el.clientHeight);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Text settings shortcuts from context
   const {
+    visible: textVisible,
     vertical, text, pos, font, fontSize, color, blend,
     strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
   } = textSettings;
@@ -364,13 +382,13 @@ const CreateFrames = () => {
         {/* Right: Preview + Text edit */}
         <div className="grid grid-cols-[1fr_320px] min-h-0">
           {/* Preview */}
-          <div className="overflow-y-auto p-6 bg-muted/20">
+          <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
             {/* Size selector */}
-            <div className="mb-4 flex items-center gap-2">
+            <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
               {([
-                { id: "main", label: "1080×1350", w: 1080, h: 1350 },
-                { id: "vertical", label: "1080×1920", w: 1080, h: 1920 },
-                { id: "square", label: "1080×1080", w: 1080, h: 1080 },
+                { id: "main", label: "1080×1350" },
+                { id: "vertical", label: "1080×1920" },
+                { id: "square", label: "1080×1080" },
               ] as const).map((s) => {
                 const active = previewSize === s.id;
                 return (
@@ -408,15 +426,15 @@ const CreateFrames = () => {
               const innerH = 1350;
               const offsetX = (canvasW - innerW) / 2;
               const offsetY = (canvasH - innerH) / 2;
-              // Display size: fit within available height (max 560px) and width (max 420px)
-              const maxW = 420;
-              const maxH = 560;
+              // Fit canvas to available preview area width and height
+              const maxW = Math.max(160, previewAreaWidth - 48); // padding
+              const maxH = Math.max(200, previewAreaHeight - 120); // size buttons + padding
               const ratio = Math.min(maxW / canvasW, maxH / canvasH);
               const dispW = canvasW * ratio;
               const dispH = canvasH * ratio;
 
               return (
-                <div className="flex justify-center">
+                <div className="flex justify-center w-full">
                   <div
                     className="relative rounded-lg overflow-hidden shadow-sm border border-border"
                     style={{
@@ -482,33 +500,35 @@ const CreateFrames = () => {
                         )}
 
                         {/* ⑤ Text */}
-                        <div
-                          className="absolute -translate-x-1/2 -translate-y-1/2 px-6 py-2 select-none"
-                          style={{
-                            left: `${pos.x}%`,
-                            top: `${pos.y}%`,
-                            color,
-                            fontFamily: font,
-                            fontSize: fontSize,
-                            writingMode: vertical ? "vertical-rl" : "horizontal-tb",
-                            WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
-                            background: bgEnabled
-                              ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
-                                  .toString(16)
-                                  .padStart(2, "0")}`
-                              : "transparent",
-                            mixBlendMode:
-                              blend === "通常"
-                                ? "normal"
-                                : blend === "乗算"
-                                  ? "multiply"
-                                  : blend === "スクリーン"
-                                    ? "screen"
-                                    : "overlay",
-                          }}
-                        >
-                          {text || "テキスト"}
-                        </div>
+                        {textVisible && (
+                          <div
+                            className="absolute -translate-x-1/2 -translate-y-1/2 px-6 py-2 select-none"
+                            style={{
+                              left: `${pos.x}%`,
+                              top: `${pos.y}%`,
+                              color,
+                              fontFamily: font,
+                              fontSize: fontSize,
+                              writingMode: vertical ? "vertical-rl" : "horizontal-tb",
+                              WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+                              background: bgEnabled
+                                ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
+                                    .toString(16)
+                                    .padStart(2, "0")}`
+                                : "transparent",
+                              mixBlendMode:
+                                blend === "通常"
+                                  ? "normal"
+                                  : blend === "乗算"
+                                    ? "multiply"
+                                    : blend === "スクリーン"
+                                      ? "screen"
+                                      : "overlay",
+                            }}
+                          >
+                            {text || "テキスト"}
+                          </div>
+                        )}
 
                         {/* ⑥ Copyright */}
                         {basic.copyright && (
@@ -554,7 +574,16 @@ const CreateFrames = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs">テキスト</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">テキスト</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">テキストを表示</span>
+                  <Switch
+                    checked={textVisible}
+                    onCheckedChange={(v) => patchText({ visible: v })}
+                  />
+                </div>
+              </div>
               <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
             </div>
 

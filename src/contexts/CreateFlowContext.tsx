@@ -17,6 +17,7 @@ export interface BasicData {
 }
 
 export interface TextSettings {
+  visible: boolean;
   vertical: boolean;
   text: string;
   pos: { x: number; y: number };
@@ -42,6 +43,7 @@ export interface ExportSettings {
 const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
 
 const defaultText: TextSettings = {
+  visible: true,
   vertical: false,
   text: "運命を変える、その一歩。",
   pos: { x: 50, y: 50 },
