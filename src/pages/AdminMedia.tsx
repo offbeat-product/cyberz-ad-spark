@@ -60,9 +60,7 @@ const blankMaster = (): Omit<MediaMaster, "id"> => ({
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 const AdminMedia = () => {
-  const [media, setMedia] = useState<MediaMaster[]>(initialMedia);
-  const [frames, setFrames] = useState<Frame[]>([]);
-  const [logos, setLogos] = useState<Logo[]>([]);
+  const { media, frames, logos, setMedia, setFrames, setLogos } = useMediaMasters();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   // Master modal
