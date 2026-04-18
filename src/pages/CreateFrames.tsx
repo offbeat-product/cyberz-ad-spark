@@ -100,7 +100,32 @@ const CreateFrames = () => {
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
+  const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
+    switch (p) {
+      case "bottom-left": return { x: 2, y: 98 };
+      case "bottom-right": return { x: 98, y: 98 };
+      case "top-left": return { x: 2, y: 2 };
+      case "top-right": return { x: 98, y: 2 };
+    }
+  };
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
+  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>(() =>
+    presetToCoord("bottom-left"),
+  );
+  // Undo/redo history (past + future stacks of coords, max 20 each)
+  const undoStackRef = useRef<{ x: number; y: number }[]>([]);
+  const redoStackRef = useRef<{ x: number; y: number }[]>([]);
+  const pushHistory = (prev: { x: number; y: number }) => {
+    undoStackRef.current.push(prev);
+    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+    redoStackRef.current = [];
+  };
+  const setCopyrightCoord = (next: { x: number; y: number }, recordHistory = true) => {
+    setCopyrightCoordState((curr) => {
+      if (recordHistory) pushHistory(curr);
+      return next;
+    });
+  };
   const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
   const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
   const [logoId, setLogoId] = useState<string>("");
