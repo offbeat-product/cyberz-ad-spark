@@ -69,6 +69,10 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
     }
   }, [open, initial, kind]);
 
+  // Canvas dims: logos always preview on a fixed 1080x1350 stage.
+  const canvasW = kind === "logo" ? 1080 : Math.max(form.position.w, 1);
+  const canvasH = kind === "logo" ? 1350 : Math.max(form.position.h, 1);
+
   // Recompute scale to fit canvas inside parent (both width and height)
   useEffect(() => {
     const compute = () => {
@@ -77,8 +81,8 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
       const cw = canvas.clientWidth;
       const ch = canvas.clientHeight;
       if (cw > 0 && ch > 0) {
-        const sx = cw / Math.max(form.position.w, 1);
-        const sy = ch / Math.max(form.position.h, 1);
+        const sx = cw / canvasW;
+        const sy = ch / canvasH;
         setScale(Math.min(sx, sy));
       }
     };
@@ -86,7 +90,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
     const ro = new ResizeObserver(compute);
     if (canvasRef.current) ro.observe(canvasRef.current);
     return () => ro.disconnect();
-  }, [open, form.position.w, form.position.h]);
+  }, [open, canvasW, canvasH]);
 
   const commitPosition = (next: Box) => {
     const prev = lastCommittedRef.current;
