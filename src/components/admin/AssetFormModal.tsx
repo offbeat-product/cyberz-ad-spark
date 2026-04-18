@@ -275,19 +275,26 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
           <div className="flex h-full flex-col overflow-hidden bg-muted/20 p-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">プレビュー</span>
-              <span className="text-xs text-muted-foreground">1080×1350</span>
+              <span className="text-xs text-muted-foreground">
+                {form.position.w}×{form.position.h}
+              </span>
             </div>
             <div className="flex flex-1 items-center justify-center overflow-hidden">
               <div
-                className="relative h-full max-h-full w-auto overflow-hidden rounded-lg border border-border bg-black"
-                style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
+                ref={canvasRef}
+                className="relative max-h-full max-w-full overflow-hidden rounded-lg border border-border bg-black"
+                style={{
+                  aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
+                  height: "100%",
+                  width: "auto",
+                }}
               >
                 <div
                   ref={stageRef}
                   className="absolute left-0 top-0 origin-top-left"
                   style={{
-                    width: CANVAS_W,
-                    height: CANVAS_H,
+                    width: Math.max(form.position.w, 1),
+                    height: Math.max(form.position.h, 1),
                     transform: `scale(${scale})`,
                   }}
                 >
@@ -314,7 +321,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
               </div>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              プレビュー上でドラッグして位置を調整できます
+              ドラッグで位置調整 / ⌘Z で元に戻す・⌘⇧Z でやり直し
             </p>
           </div>
         </div>
