@@ -15,7 +15,18 @@ import {
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
-const mediaOptions = ["ピッコマ", "コミックシーモア", "ヤンジャン＋", "まんが王国", "LINEマンガ"];
+const mediaOptions = [
+  "ピッコマ",
+  "コミックシーモア",
+  "MangaPlaza",
+  "ヤンジャン＋",
+  "Palcy",
+  "コミックDAYS",
+  "EbookRenta!",
+  "サンデーうぇぶり",
+  "まんが王国",
+  "マンガPark",
+];
 
 const CreateBasic = () => {
   const navigate = useNavigate();
