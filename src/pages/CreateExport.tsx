@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Music, Heart, Ghost, Sparkles, Wand2, Sun, Flame, VolumeX, Download } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
@@ -10,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useCreateFlow } from "@/contexts/CreateFlowContext";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
@@ -31,16 +31,21 @@ const formats = [
 
 const CreateExport = () => {
   const navigate = useNavigate();
-  const [bgm, setBgm] = useState("fantasy");
-  const [selectedFormats, setSelectedFormats] = useState<string[]>(["main"]);
-  const [bgColor, setBgColor] = useState("#FFFFFF");
-  const [showFrame, setShowFrame] = useState(true);
-  const [showLogo, setShowLogo] = useState(true);
+  const { exportSettings, setExportSettings } = useCreateFlow();
+  const { bgm, selectedFormats, bgColor, showFrame, showLogo } = exportSettings;
+
+  const setBgm = (v: string) => setExportSettings((p) => ({ ...p, bgm: v }));
+  const setBgColor = (v: string) => setExportSettings((p) => ({ ...p, bgColor: v }));
+  const setShowFrame = (v: boolean) => setExportSettings((p) => ({ ...p, showFrame: v }));
+  const setShowLogo = (v: boolean) => setExportSettings((p) => ({ ...p, showLogo: v }));
 
   const toggleFormat = (id: string) => {
-    setSelectedFormats((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
-    );
+    setExportSettings((p) => ({
+      ...p,
+      selectedFormats: p.selectedFormats.includes(id)
+        ? p.selectedFormats.filter((f) => f !== id)
+        : [...p.selectedFormats, id],
+    }));
   };
 
   const handleExport = () => {
