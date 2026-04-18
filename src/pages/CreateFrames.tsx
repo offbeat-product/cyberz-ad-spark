@@ -407,35 +407,70 @@ const CreateFrames = () => {
         <div className="grid grid-cols-[1fr_320px] min-h-0">
           {/* Preview */}
           <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
-            {/* Size selector */}
-            <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
-              {([
-                { id: "main", label: "1080×1350" },
-                { id: "vertical", label: "1080×1920" },
-                { id: "square", label: "1080×1080" },
-              ] as const).map((s) => {
-                const active = previewSize === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setPreviewSize(s.id)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
-                      active
-                        ? "text-white border-transparent shadow-sm"
-                        : "bg-background border-border text-muted-foreground hover:bg-muted",
-                    )}
-                    style={
-                      active
-                        ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
-                        : undefined
-                    }
+            {/* Controls bar */}
+            <div className="mb-4 w-full flex items-center justify-between gap-3 flex-wrap">
+              {/* Left: layer toggles + logo dropdown */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch checked={showFrame} onCheckedChange={setShowFrame} />
+                  フレームを表示
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">ロゴ</span>
+                  <Select
+                    value={logoId}
+                    onValueChange={setLogoId}
+                    disabled={!selectedMaster || availableLogos.length === 0}
                   >
-                    {s.label}
-                  </button>
-                );
-              })}
+                    <SelectTrigger className="h-8 text-xs min-w-[140px]">
+                      <SelectValue placeholder="ロゴなし" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ロゴなし</SelectItem>
+                      {availableLogos.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+                  コピーライトを表示
+                </label>
+              </div>
+
+              {/* Right: size selector */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "main", label: "1080×1350" },
+                  { id: "vertical", label: "1080×1920" },
+                  { id: "square", label: "1080×1080" },
+                ] as const).map((s) => {
+                  const active = previewSize === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setPreviewSize(s.id)}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
+                        active
+                          ? "text-white border-transparent shadow-sm"
+                          : "bg-background border-border text-muted-foreground hover:bg-muted",
+                      )}
+                      style={
+                        active
+                          ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
+                          : undefined
+                      }
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {(() => {
@@ -494,7 +529,7 @@ const CreateFrames = () => {
                         )}
 
                         {/* ③ Frame asset */}
-                        {defaultFrameAsset?.imageUrl && (
+                        {showFrame && defaultFrameAsset?.imageUrl && (
                           <img
                             src={defaultFrameAsset.imageUrl}
                             alt="default frame"
@@ -509,16 +544,16 @@ const CreateFrames = () => {
                         )}
 
                         {/* ④ Logo asset */}
-                        {defaultLogoAsset?.imageUrl && !selectedMaster?.noLogo && (
+                        {activeLogoAsset?.imageUrl && (
                           <img
-                            src={defaultLogoAsset.imageUrl}
-                            alt="default logo"
+                            src={activeLogoAsset.imageUrl}
+                            alt="logo"
                             className="absolute pointer-events-none object-contain"
                             style={{
-                              left: defaultLogoAsset.position.x,
-                              top: defaultLogoAsset.position.y,
-                              width: defaultLogoAsset.position.w,
-                              height: defaultLogoAsset.position.h,
+                              left: activeLogoAsset.position.x,
+                              top: activeLogoAsset.position.y,
+                              width: activeLogoAsset.position.w,
+                              height: activeLogoAsset.position.h,
                             }}
                           />
                         )}
