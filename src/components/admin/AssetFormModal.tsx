@@ -281,11 +281,11 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
             <div className="flex flex-1 items-center justify-center overflow-hidden">
               <div
                 ref={canvasRef}
-                className="relative max-h-full max-w-full overflow-hidden rounded-lg border border-border bg-black"
+                className="relative w-full overflow-hidden rounded-lg border border-border"
                 style={{
                   aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
-                  height: "100%",
-                  width: "auto",
+                  maxHeight: "100%",
+                  backgroundColor: "#f0f0f0",
                 }}
               >
                 <div
@@ -303,12 +303,13 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                       alt="preview"
                       draggable={false}
                       onMouseDown={startDrag}
-                      className="absolute cursor-move select-none object-contain"
+                      className="absolute cursor-move select-none"
                       style={{
                         left: form.position.x,
                         top: form.position.y,
                         width: form.position.w,
                         height: form.position.h,
+                        objectFit: "cover",
                         outline:
                           kind === "frame"
                             ? "2px dashed rgba(64,158,234,0.7)"
