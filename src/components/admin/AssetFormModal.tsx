@@ -283,13 +283,17 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                 {form.position.w}×{form.position.h}
               </span>
             </div>
-            <div className="flex flex-1 items-center justify-center overflow-hidden">
+            <div className="flex flex-1 items-center justify-center overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
-                className="relative w-full overflow-hidden rounded-lg border border-border"
+                className="relative overflow-hidden rounded-lg border border-border"
                 style={{
                   aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
                   maxHeight: "100%",
+                  maxWidth: "100%",
+                  height: "100%",
+                  width: "100%",
+                  objectFit: "contain",
                   backgroundColor: "#f0f0f0",
                 }}
               >
@@ -314,7 +318,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                         top: form.position.y,
                         width: form.position.w,
                         height: form.position.h,
-                        objectFit: "cover",
+                        objectFit: "contain",
                         outline:
                           kind === "frame"
                             ? "2px dashed rgba(64,158,234,0.7)"
