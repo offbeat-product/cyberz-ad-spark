@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
@@ -12,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCreateFlow } from "@/contexts/CreateFlowContext";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
@@ -30,9 +30,12 @@ const mediaOptions = [
 
 const CreateBasic = () => {
   const navigate = useNavigate();
-  const [title, setTitle] = useState("");
-  const [media, setMedia] = useState("");
-  const [copyright, setCopyright] = useState("");
+  const { basic, setBasic, reset } = useCreateFlow();
+
+  const handleCancel = () => {
+    reset();
+    navigate("/");
+  };
 
   return (
     <>
@@ -46,14 +49,17 @@ const CreateBasic = () => {
             <Input
               id="title"
               placeholder="例：転生したら最強剣士だった件 第1話"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={basic.title}
+              onChange={(e) => setBasic((p) => ({ ...p, title: e.target.value }))}
             />
           </div>
 
           <div className="space-y-2">
             <Label>媒体</Label>
-            <Select value={media} onValueChange={setMedia}>
+            <Select
+              value={basic.media}
+              onValueChange={(v) => setBasic((p) => ({ ...p, media: v }))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="媒体を選択" />
               </SelectTrigger>
@@ -72,14 +78,14 @@ const CreateBasic = () => {
             <Input
               id="copyright"
               placeholder="例：©作者名／出版社"
-              value={copyright}
-              onChange={(e) => setCopyright(e.target.value)}
+              value={basic.copyright}
+              onChange={(e) => setBasic((p) => ({ ...p, copyright: e.target.value }))}
             />
           </div>
         </div>
 
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="outline" onClick={() => navigate("/")}>
+          <Button variant="outline" onClick={handleCancel}>
             キャンセル
           </Button>
           <Button onClick={() => navigate("/create/frames")}>次へ</Button>
