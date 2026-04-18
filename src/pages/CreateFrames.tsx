@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import SortableFrameCard from "@/components/create/SortableFrameCard";
+import CopyrightDraggable from "@/components/create/CopyrightDraggable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,18 +101,34 @@ const CreateFrames = () => {
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
-  const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
-    switch (p) {
-      case "bottom-left": return { x: 1, y: 99 };
-      case "bottom-right": return { x: 99, y: 99 };
-      case "top-left": return { x: 1, y: 1 };
-      case "top-right": return { x: 99, y: 1 };
-    }
-  };
+  // Inner comic area is 1080 x 1350 px (canvas coords)
+  const CANVAS_W = 1080;
+  const CANVAS_H = 1350;
+  const PRESET_PADDING = 8;
+  // Position is stored in canvas px (top-left of the element)
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>(() =>
-    presetToCoord("bottom-left"),
-  );
+  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>({ x: PRESET_PADDING, y: CANVAS_H - 40 });
+  // Last measured element size in canvas px (kept in a ref for clamp math)
+  const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  const clampCoord = (x: number, y: number) => {
+    const { w, h } = copyrightSizeRef.current;
+    const maxX = Math.max(0, CANVAS_W - w);
+    const maxY = Math.max(0, CANVAS_H - h);
+    return {
+      x: Math.max(0, Math.min(maxX, x)),
+      y: Math.max(0, Math.min(maxY, y)),
+    };
+  };
+  const applyPreset = (p: CopyrightPos) => {
+    const { w, h } = copyrightSizeRef.current;
+    let x = PRESET_PADDING;
+    let y = PRESET_PADDING;
+    if (p === "bottom-left" || p === "bottom-right") y = Math.max(0, CANVAS_H - h - PRESET_PADDING);
+    if (p === "top-right" || p === "bottom-right") x = Math.max(0, CANVAS_W - w - PRESET_PADDING);
+    return { x, y };
+  };
+
   // Undo/redo history (past + future stacks of coords, max 20 each)
   const undoStackRef = useRef<{ x: number; y: number }[]>([]);
   const redoStackRef = useRef<{ x: number; y: number }[]>([]);
@@ -119,12 +136,6 @@ const CreateFrames = () => {
     undoStackRef.current.push(prev);
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
-  };
-  const setCopyrightCoord = (next: { x: number; y: number }, recordHistory = true) => {
-    setCopyrightCoordState((curr) => {
-      if (recordHistory) pushHistory(curr);
-      return next;
-    });
   };
   const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
   const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
@@ -632,75 +643,27 @@ const CreateFrames = () => {
                           </div>
                         )}
 
-                        {/* ⑥ Copyright (draggable) */}
-                        {showCopyright && basic.copyright && (() => {
-                          // Anchor: based on which edge is closest, so pos% maps to a corner
-                          const anchorH = copyrightCoord.x < 50 ? "left" : "right";
-                          const anchorV = copyrightCoord.y < 50 ? "top" : "bottom";
-                          const transformX = anchorH === "left" ? "0%" : "-100%";
-                          const transformY = anchorV === "top" ? "0%" : "-100%";
-                          const positionStyle: React.CSSProperties = {
-                            [anchorH === "left" ? "left" : "right"]:
-                              `${anchorH === "left" ? copyrightCoord.x : 100 - copyrightCoord.x}%`,
-                            [anchorV === "top" ? "top" : "bottom"]:
-                              `${anchorV === "top" ? copyrightCoord.y : 100 - copyrightCoord.y}%`,
-                            transform: `translate(${transformX}, ${transformY})`,
-                          };
-
-                          const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const stageEl = e.currentTarget.parentElement; // inner comic area
-                            if (!stageEl) return;
-                            const rect = stageEl.getBoundingClientRect();
-                            const startX = e.clientX;
-                            const startY = e.clientY;
-                            const startCoord = copyrightCoord;
-                            // Push history snapshot once at drag start
-                            pushHistory(startCoord);
-                            (e.target as Element).setPointerCapture?.(e.pointerId);
-                            const elRect = e.currentTarget.getBoundingClientRect();
-                            const elWpct = (elRect.width / rect.width) * 100;
-                            const elHpct = (elRect.height / rect.height) * 100;
-                            const onMove = (ev: PointerEvent) => {
-                              const dx = ((ev.clientX - startX) / rect.width) * 100;
-                              const dy = ((ev.clientY - startY) / rect.height) * 100;
-                              let nx = startCoord.x + dx;
-                              let ny = startCoord.y + dy;
-                              // Clamp so the element stays fully inside the canvas based on current anchor
-                              const aH = nx < 50 ? "left" : "right";
-                              const aV = ny < 50 ? "top" : "bottom";
-                              if (aH === "left") nx = Math.max(0, Math.min(100 - elWpct, nx));
-                              else nx = Math.max(elWpct, Math.min(100, nx));
-                              if (aV === "top") ny = Math.max(0, Math.min(100 - elHpct, ny));
-                              else ny = Math.max(elHpct, Math.min(100, ny));
-                              setCopyrightCoordState({ x: nx, y: ny });
-                            };
-                            const onUp = () => {
-                              window.removeEventListener("pointermove", onMove);
-                              window.removeEventListener("pointerup", onUp);
-                            };
-                            window.addEventListener("pointermove", onMove);
-                            window.addEventListener("pointerup", onUp);
-                          };
-
-                          return (
-                            <div
-                              onPointerDown={onPointerDown}
-                              className="absolute select-none cursor-grab active:cursor-grabbing whitespace-nowrap"
-                              style={{
-                                ...positionStyle,
-                                color: copyrightColor,
-                                fontFamily: copyrightFont,
-                                fontSize: copyrightSize,
-                                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-                                touchAction: "none",
-                              }}
-                            >
-                              {basic.copyright}
-                            </div>
-                          );
-                        })()}
+                        {/* ⑥ Copyright (draggable, px-based in canvas coords) */}
+                        {showCopyright && basic.copyright && (
+                          <CopyrightDraggable
+                            text={basic.copyright}
+                            color={copyrightColor}
+                            font={copyrightFont}
+                            fontSize={copyrightSize}
+                            x={copyrightCoord.x}
+                            y={copyrightCoord.y}
+                            canvasW={CANVAS_W}
+                            canvasH={CANVAS_H}
+                            scale={ratio}
+                            onSizeChange={(w, h) => {
+                              copyrightSizeRef.current = { w, h };
+                              // Re-clamp current coord so element stays in bounds when font size grows
+                              setCopyrightCoordState((curr) => clampCoord(curr.x, curr.y));
+                            }}
+                            onDragStart={() => pushHistory(copyrightCoord)}
+                            onDrag={(nx, ny) => setCopyrightCoordState(clampCoord(nx, ny))}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -878,7 +841,7 @@ const CreateFrames = () => {
                               onClick={() => {
                                 pushHistory(copyrightCoord);
                                 setCopyrightPos(p.id);
-                                setCopyrightCoordState(presetToCoord(p.id));
+                                setCopyrightCoordState(applyPreset(p.id));
                               }}
                               className={cn(
                                 "rounded px-2 py-1 text-xs border transition-colors",
