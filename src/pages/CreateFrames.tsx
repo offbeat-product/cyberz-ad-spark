@@ -100,6 +100,8 @@ const CreateFrames = () => {
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
+  const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
+  const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
   const [logoId, setLogoId] = useState<string>("");
 
   // Resolve defaults from the selected media master (matched by id)
