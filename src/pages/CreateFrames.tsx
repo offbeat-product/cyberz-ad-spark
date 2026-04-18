@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
+import type { Transition } from "@/components/admin/MediaPreview";
 import { toast } from "sonner";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
@@ -28,6 +30,14 @@ const transitionPresets = [0.2, 0.3, 0.5, 0.8, 1.0];
 const transitionOptions = ["なし", "スライド左→右", "スライド上→下", "フェード", "ズームイン"];
 const blendModes = ["通常", "乗算", "スクリーン", "オーバーレイ"];
 const fontOptions = ["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Yusei Magic"];
+
+const transitionKeyToLabel: Record<Transition, string> = {
+  "none": "なし",
+  "slide-lr": "スライド左→右",
+  "slide-tb": "スライド上→下",
+  "fade": "フェード",
+  "zoom-in": "ズームイン",
+};
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 
