@@ -326,18 +326,37 @@ const CreateExport = () => {
                           }
                           setExpandedCategory(isExpanded ? null : cat.id);
                         }}
-                        className="flex items-center gap-3 flex-1 text-left min-w-0"
+                        className="flex items-center gap-3 text-left min-w-0 shrink-0"
                       >
                         <Icon className={cn("h-5 w-5 shrink-0", hasSelectedFromCat ? "text-primary" : "text-muted-foreground")} />
                         <span className="text-sm font-medium shrink-0">{cat.label}</span>
-                        {selectedTrackInCat && (
-                          <span className="text-xs text-primary truncate">{selectedTrackInCat.name}</span>
-                        )}
-                        <span className="flex-1" />
-                        {cat.tracks.length > 0 && (
-                          <span className="text-xs text-muted-foreground shrink-0">{cat.tracks.length}曲</span>
-                        )}
                       </button>
+                      {selectedTrackInCat && (
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 hover:bg-primary/10 hover:text-primary shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              playPreview(selectedTrackInCat.id, selectedTrackInCat.url);
+                            }}
+                            title={previewingId === selectedTrackInCat.id ? "停止" : "試聴"}
+                          >
+                            {previewingId === selectedTrackInCat.id ? (
+                              <Pause className="h-3.5 w-3.5" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                          <span className="text-xs text-primary truncate">{selectedTrackInCat.name}</span>
+                        </div>
+                      )}
+                      {!selectedTrackInCat && <div className="flex-1" />}
+                      {cat.tracks.length > 0 && (
+                        <span className="text-xs text-muted-foreground shrink-0">{cat.tracks.length}曲</span>
+                      )}
                       {cat.tracks.length > 0 && (
                         <>
                           <Button
