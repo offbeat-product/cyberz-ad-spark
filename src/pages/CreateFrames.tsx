@@ -411,12 +411,19 @@ const CreateFrames = () => {
           {/* Preview */}
           <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
             {/* Controls bar */}
-            <div className="mb-4 w-full flex items-center justify-between gap-3 flex-wrap">
+            <div className="mb-4 w-full flex items-start justify-between gap-3 flex-wrap">
               {/* Left: layer toggles + logo dropdown */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Switch checked={showFrame} onCheckedChange={setShowFrame} />
-                  フレームを表示
+              <div className="flex items-start gap-4 flex-wrap">
+                <label className={cn(
+                  "flex items-center gap-2 text-xs",
+                  defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
+                )}>
+                  <Switch
+                    checked={showFrame && !!defaultFrameAsset}
+                    onCheckedChange={setShowFrame}
+                    disabled={!defaultFrameAsset}
+                  />
+                  {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">ロゴ</span>
@@ -438,10 +445,54 @@ const CreateFrames = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-                  コピーライトを表示
-                </label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+                    コピーライトを表示
+                    {showCopyright && (
+                      <>
+                        <div className="flex items-center gap-2 ml-2">
+                          <Slider
+                            value={[copyrightSize]}
+                            min={8}
+                            max={24}
+                            step={1}
+                            onValueChange={(v) => setCopyrightSize(v[0])}
+                            className="w-24"
+                          />
+                          <span className="text-xs tabular-nums w-10">{copyrightSize}px</span>
+                        </div>
+                      </>
+                    )}
+                  </label>
+                  {showCopyright && (
+                    <div className="flex items-center gap-1">
+                      {([
+                        { id: "bottom-left", label: "左下" },
+                        { id: "bottom-right", label: "右下" },
+                        { id: "top-left", label: "左上" },
+                        { id: "top-right", label: "右上" },
+                      ] as const).map((p) => {
+                        const active = copyrightPos === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setCopyrightPos(p.id)}
+                            className={cn(
+                              "rounded px-2 py-1 text-[10px] border transition-colors",
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background border-border text-muted-foreground hover:bg-muted",
+                            )}
+                          >
+                            {p.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Right: size selector */}
