@@ -108,22 +108,14 @@ const CreateFrames = () => {
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
   const PRESET_PADDING = 8;
-  // Position is stored in canvas px (top-left of the element)
+  // Position is stored as preset + offset; final coord = preset + offset
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>({ x: PRESET_PADDING, y: CANVAS_H - 40 });
-  // Last measured element size in canvas px (kept in a ref for clamp math)
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Last measured element size in canvas px (kept in a ref for preset math)
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  const clampCoord = (x: number, y: number) => {
-    const { w, h } = copyrightSizeRef.current;
-    const maxX = Math.max(0, CANVAS_W - w);
-    const maxY = Math.max(0, CANVAS_H - h);
-    return {
-      x: Math.max(0, Math.min(maxX, x)),
-      y: Math.max(0, Math.min(maxY, y)),
-    };
-  };
-  const applyPreset = (p: CopyrightPos) => {
+  // プリセット位置を計算（フォントサイズ＝要素サイズ変化に追従）
+  const computePresetCoord = (p: CopyrightPos) => {
     const { w, h } = copyrightSizeRef.current;
     let x = PRESET_PADDING;
     if (p.endsWith("-center")) x = Math.max(0, (CANVAS_W - w) / 2);
@@ -134,11 +126,17 @@ const CreateFrames = () => {
     return { x, y };
   };
 
-  // Undo/redo history (past + future stacks of coords, max 20 each)
-  const undoStackRef = useRef<{ x: number; y: number }[]>([]);
-  const redoStackRef = useRef<{ x: number; y: number }[]>([]);
-  const pushHistory = (prev: { x: number; y: number }) => {
-    undoStackRef.current.push(prev);
+  // 最終表示座標 = プリセット位置 + オフセット
+  const copyrightCoord = (() => {
+    const base = computePresetCoord(copyrightPos);
+    return { x: base.x + copyrightOffset.x, y: base.y + copyrightOffset.y };
+  })();
+
+  // Undo/Redo: snapshot of {pos, offset}
+  const undoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  const redoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  const pushHistory = () => {
+    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
   };
