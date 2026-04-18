@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
+import type { Transition } from "@/components/admin/MediaPreview";
 import { toast } from "sonner";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
@@ -28,6 +30,14 @@ const transitionPresets = [0.2, 0.3, 0.5, 0.8, 1.0];
 const transitionOptions = ["なし", "スライド左→右", "スライド上→下", "フェード", "ズームイン"];
 const blendModes = ["通常", "乗算", "スクリーン", "オーバーレイ"];
 const fontOptions = ["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Yusei Magic"];
+
+const transitionKeyToLabel: Record<Transition, string> = {
+  "none": "なし",
+  "slide-lr": "スライド左→右",
+  "slide-tb": "スライド上→下",
+  "fade": "フェード",
+  "zoom-in": "ズームイン",
+};
 
 const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 
@@ -53,8 +63,17 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { basic, frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { media } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
+
+  // Resolve defaults from the selected media master (basic.media holds the name)
+  const selectedMaster = media.find((m) => m.name === basic.media);
+  const mediaDefaults = {
+    display: selectedMaster?.displaySec ?? 2.0,
+    transitionTime: selectedMaster?.switchSec ?? 0.3,
+    transition: selectedMaster ? transitionKeyToLabel[selectedMaster.transition] : "フェード",
+  };
 
   // Bulk upload state
   const bulkInputRef = useRef<HTMLInputElement>(null);
@@ -72,6 +91,30 @@ const CreateFrames = () => {
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
 
+  // Apply media defaults to existing frames once on first open (only frames untouched by user).
+  // We treat the initial seed frames (display 2.0 / transitionTime 0.3 / transition "フェード") as untouched.
+  const appliedDefaultsRef = useRef(false);
+  useEffect(() => {
+    if (appliedDefaultsRef.current) return;
+    if (!selectedMaster) return;
+    appliedDefaultsRef.current = true;
+    setFrames((prev) =>
+      prev.map((f) => {
+        const untouched =
+          f.display === 2.0 && f.transitionTime === 0.3 && f.transition === "フェード";
+        return untouched
+          ? {
+              ...f,
+              display: mediaDefaults.display,
+              transitionTime: mediaDefaults.transitionTime,
+              transition: mediaDefaults.transition,
+            }
+          : f;
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMaster?.id]);
+
   useEffect(() => {
     if (!selectedId && frames[0]) setSelectedId(frames[0].id);
   }, [frames, selectedId]);
@@ -82,7 +125,16 @@ const CreateFrames = () => {
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => [...prev, { id, display: 2.0, transitionTime: 0.3, transition: "フェード", image: null }]);
+    setFrames((prev) => [
+      ...prev,
+      {
+        id,
+        display: mediaDefaults.display,
+        transitionTime: mediaDefaults.transitionTime,
+        transition: mediaDefaults.transition,
+        image: null,
+      },
+    ]);
     setSelectedId(id);
   };
 
@@ -109,9 +161,9 @@ const CreateFrames = () => {
         const dataUrl = await readFileAsDataUrl(files[i]);
         newFrames.push({
           id: `f${Date.now()}_${i}`,
-          display: 2.0,
-          transitionTime: 0.3,
-          transition: "フェード",
+          display: mediaDefaults.display,
+          transitionTime: mediaDefaults.transitionTime,
+          transition: mediaDefaults.transition,
           image: dataUrl,
           name: files[i].name,
         });
