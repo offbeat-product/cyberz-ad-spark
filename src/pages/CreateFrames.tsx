@@ -865,7 +865,11 @@ const CreateFrames = () => {
                             <button
                               key={p.id}
                               type="button"
-                              onClick={() => setCopyrightPos(p.id)}
+                              onClick={() => {
+                                pushHistory(copyrightCoord);
+                                setCopyrightPos(p.id);
+                                setCopyrightCoordState(presetToCoord(p.id));
+                              }}
                               className={cn(
                                 "rounded px-2 py-1 text-xs border transition-colors",
                                 active
