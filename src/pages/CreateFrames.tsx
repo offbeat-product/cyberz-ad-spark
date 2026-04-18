@@ -90,16 +90,24 @@ const readFileAsDataUrl = (file: File) =>
 const CreateFrames = () => {
   const navigate = useNavigate();
   const { basic, frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
-  const { media } = useMediaMasters();
+  const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
+  const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
 
-  // Resolve defaults from the selected media master (basic.media holds the name)
+  // Resolve defaults from the selected media master (matched by id)
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const mediaDefaults = {
     display: selectedMaster?.displaySec ?? 2.0,
     transitionTime: selectedMaster?.switchSec ?? 0.3,
     transition: selectedMaster ? transitionKeyToLabel[selectedMaster.transition] : "フェード",
   };
+  const masterBgColor = selectedMaster?.bgColor ?? "#000000";
+  const defaultFrameAsset = selectedMaster
+    ? masterFrames.find((f) => f.mediaMasterId === selectedMaster.id && f.isDefault)
+    : undefined;
+  const defaultLogoAsset = selectedMaster
+    ? masterLogos.find((l) => l.mediaMasterId === selectedMaster.id && l.isDefault)
+    : undefined;
 
   // Bulk upload state
   const bulkInputRef = useRef<HTMLInputElement>(null);
