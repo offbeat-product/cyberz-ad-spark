@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCreateFlow } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
