@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
+import { Plus, AlignLeft, AlignCenter, Upload, CheckCircle2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -17,6 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { toast } from "sonner";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
@@ -26,19 +29,7 @@ const transitionOptions = ["なし", "スライド左→右", "スライド上�
 const blendModes = ["通常", "乗算", "スクリーン", "オーバーレイ"];
 const fontOptions = ["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Yusei Magic"];
 
-interface Frame {
-  id: string;
-  display: number;
-  transitionTime: number;
-  transition: string;
-}
-
-const initialFrames: Frame[] = Array.from({ length: 5 }, (_, i) => ({
-  id: `f${i + 1}`,
-  display: 2.0,
-  transitionTime: 0.3,
-  transition: "フェード",
-}));
+const ACCEPTED = ["image/png", "image/jpeg", "image/webp"];
 
 const gridPositions = [
   { label: "左上", x: 10, y: 10 },
@@ -52,33 +43,98 @@ const gridPositions = [
   { label: "右下", x: 90, y: 90 },
 ];
 
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const [frames, setFrames] = useState<Frame[]>(initialFrames);
-  const [selectedId, setSelectedId] = useState<string>(initialFrames[0].id);
+  const { frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
 
-  const [vertical, setVertical] = useState(false);
-  const [text, setText] = useState("運命を変える、その一歩。");
-  const [pos, setPos] = useState({ x: 50, y: 50 });
-  const [font, setFont] = useState("Noto Sans JP");
-  const [fontSize, setFontSize] = useState(48);
-  const [color, setColor] = useState("#1a1a1a");
-  const [blend, setBlend] = useState("通常");
-  const [strokeColor, setStrokeColor] = useState("#ffffff");
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [bgEnabled, setBgEnabled] = useState(true);
-  const [bgColor, setBgColor] = useState("#1D9E75");
-  const [bgOpacity, setBgOpacity] = useState(80);
+  // Bulk upload state
+  const bulkInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadTotal, setUploadTotal] = useState(0);
+  const [uploadDone, setUploadDone] = useState(0);
+  const [completedCount, setCompletedCount] = useState<number | null>(null);
 
-  const updateFrame = (id: string, patch: Partial<Frame>) => {
+  // Text settings shortcuts from context
+  const {
+    vertical, text, pos, font, fontSize, color, blend,
+    strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
+  } = textSettings;
+  const patchText = (patch: Partial<typeof textSettings>) =>
+    setTextSettings((p) => ({ ...p, ...patch }));
+
+  useEffect(() => {
+    if (!selectedId && frames[0]) setSelectedId(frames[0].id);
+  }, [frames, selectedId]);
+
+  const updateFrame = (id: string, patch: Partial<FrameData>) => {
     setFrames((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   };
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => [...prev, { id, display: 2.0, transitionTime: 0.3, transition: "フェード" }]);
+    setFrames((prev) => [...prev, { id, display: 2.0, transitionTime: 0.3, transition: "フェード", image: null }]);
     setSelectedId(id);
   };
+
+  const handleBulkFiles = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList).filter((f) => ACCEPTED.includes(f.type));
+    const skipped = fileList.length - files.length;
+    if (skipped > 0) toast.error(`${skipped}件のファイルは未対応の形式のためスキップしました`);
+    if (files.length === 0) return;
+
+    // Sort by file name (natural order so 001 → 002 etc.)
+    files.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }),
+    );
+
+    setUploading(true);
+    setUploadTotal(files.length);
+    setUploadDone(0);
+    setCompletedCount(null);
+
+    const newFrames: FrameData[] = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        const dataUrl = await readFileAsDataUrl(files[i]);
+        newFrames.push({
+          id: `f${Date.now()}_${i}`,
+          display: 2.0,
+          transitionTime: 0.3,
+          transition: "フェード",
+          image: dataUrl,
+          name: files[i].name,
+        });
+      } catch (e) {
+        // skip
+      }
+      setUploadDone(i + 1);
+    }
+
+    setFrames((prev) => [...prev, ...newFrames]);
+    if (newFrames.length > 0) setSelectedId(newFrames[0].id);
+    setUploading(false);
+    setCompletedCount(newFrames.length);
+    setTimeout(() => setCompletedCount(null), 3000);
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleBulkFiles(e.dataTransfer.files);
+  };
+
+  const selectedFrame = frames.find((f) => f.id === selectedId);
 
   return (
     <>
@@ -99,8 +155,60 @@ const CreateFrames = () => {
       </div>
 
       <div className="flex-1 grid grid-cols-[40%_60%] min-h-0">
-        {/* Left: Frame list */}
+        {/* Left: Bulk upload + Frame list */}
         <div className="border-r border-border overflow-y-auto p-6 space-y-4 bg-muted/30">
+          {/* Bulk upload zone */}
+          <div
+            onClick={() => bulkInputRef.current?.click()}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+            className={cn(
+              "cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors flex flex-col items-center gap-2",
+              dragOver
+                ? "border-primary bg-primary/5"
+                : "border-border bg-background hover:bg-muted/40",
+            )}
+          >
+            <Upload className="h-7 w-7 text-muted-foreground" />
+            <div className="text-sm font-medium">
+              クリックまたはドラッグ&ドロップで画像を一括アップロード
+            </div>
+            <div className="text-xs text-muted-foreground">
+              PNG / JPG / WebP対応・複数ファイル選択可（上限なし）
+            </div>
+            <input
+              ref={bulkInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                handleBulkFiles(e.target.files);
+                if (bulkInputRef.current) bulkInputRef.current.value = "";
+              }}
+            />
+          </div>
+
+          {uploading && (
+            <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+              <div className="text-xs text-muted-foreground">
+                {uploadTotal}枚中{uploadDone}枚アップロード中...
+              </div>
+              <Progress value={uploadTotal === 0 ? 0 : (uploadDone / uploadTotal) * 100} className="h-2" />
+            </div>
+          )}
+
+          {!uploading && completedCount !== null && (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 text-sm text-primary">
+              <CheckCircle2 className="h-4 w-4" />
+              {completedCount}枚の画像をアップロードしました
+            </div>
+          )}
+
           <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
           {frames.map((f, idx) => {
             const selected = f.id === selectedId;
@@ -114,12 +222,19 @@ const CreateFrames = () => {
                 )}
               >
                 <div className="flex gap-4">
-                  <div className="w-20 h-28 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground shrink-0">
-                    コマ{idx + 1}
+                  <div className="w-20 h-28 bg-muted rounded overflow-hidden flex items-center justify-center text-xs text-muted-foreground shrink-0">
+                    {f.image ? (
+                      <img src={f.image} alt={`コマ${idx + 1}`} className="w-full h-full object-cover" />
+                    ) : (
+                      <>コマ{idx + 1}</>
+                    )}
                   </div>
                   <div className="flex-1 space-y-3 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">コマ {idx + 1}</span>
+                      <span className="text-sm font-medium truncate">
+                        コマ {idx + 1}
+                        {f.name ? <span className="text-xs text-muted-foreground ml-2">{f.name}</span> : null}
+                      </span>
                     </div>
 
                     <div className="space-y-1.5">
@@ -224,9 +339,13 @@ const CreateFrames = () => {
               className="relative bg-muted rounded-lg overflow-hidden shadow-sm"
               style={{ width: 360, height: 450 }}
             >
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                コマプレビュー
-              </div>
+              {selectedFrame?.image ? (
+                <img src={selectedFrame.image} alt="frame" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                  コマプレビュー
+                </div>
+              )}
               <div
                 className="absolute -translate-x-1/2 -translate-y-1/2 px-3 py-1 cursor-move select-none"
                 style={{
@@ -258,7 +377,7 @@ const CreateFrames = () => {
               <Button
                 variant={!vertical ? "default" : "outline"}
                 size="sm"
-                onClick={() => setVertical(false)}
+                onClick={() => patchText({ vertical: false })}
                 className="flex-1"
               >
                 <AlignLeft /> 横書き
@@ -266,7 +385,7 @@ const CreateFrames = () => {
               <Button
                 variant={vertical ? "default" : "outline"}
                 size="sm"
-                onClick={() => setVertical(true)}
+                onClick={() => patchText({ vertical: true })}
                 className="flex-1"
               >
                 <AlignCenter /> 縦書き
@@ -275,7 +394,7 @@ const CreateFrames = () => {
 
             <div className="space-y-2">
               <Label className="text-xs">テキスト</Label>
-              <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
+              <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
             </div>
 
             <div className="space-y-2">
@@ -284,7 +403,7 @@ const CreateFrames = () => {
                 {gridPositions.map((g) => (
                   <button
                     key={g.label}
-                    onClick={() => setPos({ x: g.x, y: g.y })}
+                    onClick={() => patchText({ pos: { x: g.x, y: g.y } })}
                     className={cn(
                       "aspect-square rounded border text-[10px]",
                       pos.x === g.x && pos.y === g.y
@@ -304,7 +423,7 @@ const CreateFrames = () => {
                 <Input
                   type="number"
                   value={pos.x}
-                  onChange={(e) => setPos({ ...pos, x: Number(e.target.value) })}
+                  onChange={(e) => patchText({ pos: { ...pos, x: Number(e.target.value) } })}
                 />
               </div>
               <div className="space-y-1">
@@ -312,14 +431,14 @@ const CreateFrames = () => {
                 <Input
                   type="number"
                   value={pos.y}
-                  onChange={(e) => setPos({ ...pos, y: Number(e.target.value) })}
+                  onChange={(e) => patchText({ pos: { ...pos, y: Number(e.target.value) } })}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs">フォント</Label>
-              <Select value={font} onValueChange={setFont}>
+              <Select value={font} onValueChange={(v) => patchText({ font: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -337,7 +456,7 @@ const CreateFrames = () => {
               <Label className="text-xs">フォントサイズ：{fontSize}px</Label>
               <Slider
                 value={[fontSize]}
-                onValueChange={(v) => setFontSize(v[0])}
+                onValueChange={(v) => patchText({ fontSize: v[0] })}
                 min={12}
                 max={120}
                 step={1}
@@ -350,16 +469,16 @@ const CreateFrames = () => {
                 <input
                   type="color"
                   value={color}
-                  onChange={(e) => setColor(e.target.value)}
+                  onChange={(e) => patchText({ color: e.target.value })}
                   className="h-9 w-14 rounded border border-border cursor-pointer"
                 />
-                <Input value={color} onChange={(e) => setColor(e.target.value)} />
+                <Input value={color} onChange={(e) => patchText({ color: e.target.value })} />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs">描画モード</Label>
-              <Select value={blend} onValueChange={setBlend}>
+              <Select value={blend} onValueChange={(v) => patchText({ blend: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -379,13 +498,13 @@ const CreateFrames = () => {
                 <input
                   type="color"
                   value={strokeColor}
-                  onChange={(e) => setStrokeColor(e.target.value)}
+                  onChange={(e) => patchText({ strokeColor: e.target.value })}
                   className="h-9 w-14 rounded border border-border cursor-pointer"
                 />
                 <Input
                   type="number"
                   value={strokeWidth}
-                  onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                  onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
                   min={0}
                   max={20}
                   className="w-20"
@@ -397,7 +516,7 @@ const CreateFrames = () => {
             <div className="space-y-3 border-t border-border pt-4">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">背景帯</Label>
-                <Switch checked={bgEnabled} onCheckedChange={setBgEnabled} />
+                <Switch checked={bgEnabled} onCheckedChange={(v) => patchText({ bgEnabled: v })} />
               </div>
               {bgEnabled && (
                 <>
@@ -405,16 +524,16 @@ const CreateFrames = () => {
                     <input
                       type="color"
                       value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
+                      onChange={(e) => patchText({ bgColor: e.target.value })}
                       className="h-9 w-14 rounded border border-border cursor-pointer"
                     />
-                    <Input value={bgColor} onChange={(e) => setBgColor(e.target.value)} />
+                    <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">透明度：{bgOpacity}%</Label>
                     <Slider
                       value={[bgOpacity]}
-                      onValueChange={(v) => setBgOpacity(v[0])}
+                      onValueChange={(v) => patchText({ bgOpacity: v[0] })}
                       min={0}
                       max={100}
                       step={1}
