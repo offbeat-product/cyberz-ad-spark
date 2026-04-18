@@ -301,10 +301,11 @@ const CreateFrames = () => {
         <StepIndicator steps={steps} current={1} />
       </div>
 
-      <div className="flex-1 grid grid-cols-[40%_60%] min-h-0">
-        {/* Left: Bulk upload + Frame list */}
-        <div className="border-r border-border overflow-y-auto p-6 space-y-4 bg-muted/30">
-          {/* Bulk upload zone */}
+      <div className="flex-1 grid grid-cols-[30%_40%_30%] min-h-0">
+        {/* ===== Left column (30%): Bulk upload (sticky top) + Frame list (scroll) ===== */}
+        <div className="border-r border-border min-h-0 flex flex-col bg-muted/30">
+          {/* Sticky upload area */}
+          <div className="p-4 border-b border-border bg-muted/30 space-y-3">
           <div
             onClick={() => bulkInputRef.current?.click()}
             onDragOver={(e) => {
@@ -355,42 +356,46 @@ const CreateFrames = () => {
               {completedCount}枚の画像をアップロードしました
             </div>
           )}
+          </div>
 
-          <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
+          {/* Scrollable frame list */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+            <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
 
-          {frames.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-background/40 p-6 text-center text-sm text-muted-foreground">
-              まだコマがありません。上のエリアから画像をアップロードしてください。
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-4">
-                  {frames.map((f, idx) => (
-                    <SortableFrameCard
-                      key={f.id}
-                      frame={f}
-                      index={idx}
-                      total={frames.length}
-                      selected={f.id === selectedId}
-                      onSelect={() => setSelectedId(f.id)}
-                      onUpdate={(patch) => updateFrame(f.id, patch)}
-                      onMoveUp={() => moveFrame(idx, idx - 1)}
-                      onMoveDown={() => moveFrame(idx, idx + 1)}
-                      onDelete={() => requestDelete(f.id)}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
+            {frames.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border bg-background/40 p-6 text-center text-sm text-muted-foreground">
+                まだコマがありません。上のエリアから画像をアップロードしてください。
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-4">
+                    {frames.map((f, idx) => (
+                      <SortableFrameCard
+                        key={f.id}
+                        frame={f}
+                        index={idx}
+                        total={frames.length}
+                        selected={f.id === selectedId}
+                        onSelect={() => setSelectedId(f.id)}
+                        onUpdate={(patch) => updateFrame(f.id, patch)}
+                        onMoveUp={() => moveFrame(idx, idx - 1)}
+                        onMoveDown={() => moveFrame(idx, idx + 1)}
+                        onDelete={() => requestDelete(f.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
 
-          <button
-            onClick={addFrame}
-            className="w-full rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
-          >
-            <Plus className="h-4 w-4" /> コマを追加
-          </button>
+            <button
+              onClick={addFrame}
+              className="w-full rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="h-4 w-4" /> コマを追加
+            </button>
+          </div>
         </div>
 
         <AlertDialog open={pendingDeleteId !== null} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
@@ -411,170 +416,41 @@ const CreateFrames = () => {
         </AlertDialog>
 
 
-        {/* Right: Preview + Text edit */}
-        <div className="grid grid-cols-[1fr_320px] min-h-0">
-          {/* Preview */}
-          <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
-            {/* Controls bar */}
-            <div className="mb-4 w-full flex items-start justify-between gap-3 flex-wrap">
-              {/* Left: layer toggles + logo dropdown */}
-              <div className="flex items-start gap-4 flex-wrap">
-                <div className={cn(
-                  "flex items-center gap-2 text-xs",
-                  defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
-                )}>
-                  <Switch
-                    checked={showFrame && !!defaultFrameAsset}
-                    onCheckedChange={setShowFrame}
-                    disabled={!defaultFrameAsset}
-                  />
-                  <span>{defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">ロゴ</span>
-                  <Select
-                    value={logoId}
-                    onValueChange={setLogoId}
-                    disabled={!selectedMaster || availableLogos.length === 0}
-                  >
-                    <SelectTrigger className="h-8 text-xs min-w-[140px]">
-                      <SelectValue placeholder="ロゴなし" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">ロゴなし</SelectItem>
-                      {availableLogos.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground">
-                    <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-                    <span className="whitespace-nowrap">コピーライトを表示</span>
-                    {showCopyright && (
-                      <div className="flex items-center gap-2 ml-2">
-                        <Slider
-                          value={[copyrightSize]}
-                          min={8}
-                          max={100}
-                          step={1}
-                          onValueChange={(v) => setCopyrightSize(v[0])}
-                          className="w-32"
-                        />
-                        <span className="text-xs tabular-nums w-12 whitespace-nowrap">{copyrightSize}px</span>
-                      </div>
-                    )}
-                  </div>
-                  {showCopyright && (
-                    <>
-                      <div className="flex items-center gap-1">
-                        {([
-                          { id: "bottom-left", label: "左下" },
-                          { id: "bottom-right", label: "右下" },
-                          { id: "top-left", label: "左上" },
-                          { id: "top-right", label: "右上" },
-                        ] as const).map((p) => {
-                          const active = copyrightPos === p.id;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => setCopyrightPos(p.id)}
-                              className={cn(
-                                "rounded px-2 py-1 text-[10px] border transition-colors whitespace-nowrap",
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background border-border text-muted-foreground hover:bg-muted",
-                              )}
-                            >
-                              {p.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">フォント</span>
-                        <Select value={copyrightFont} onValueChange={setCopyrightFont}>
-                          <SelectTrigger className="h-8 text-xs min-w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
-                              <SelectItem key={f} value={f}>{f}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">カラー</span>
-                        <input
-                          type="color"
-                          value={copyrightColor}
-                          onChange={(e) => setCopyrightColor(e.target.value)}
-                          className="h-7 w-9 cursor-pointer rounded border border-border bg-background p-0"
-                        />
-                        <div className="flex items-center gap-1">
-                          {[
-                            { c: "#FFFFFF", label: "白" },
-                            { c: "#000000", label: "黒" },
-                            { c: "#888888", label: "グレー" },
-                          ].map((p) => (
-                            <button
-                              key={p.c}
-                              type="button"
-                              onClick={() => setCopyrightColor(p.c)}
-                              title={p.label}
-                              className={cn(
-                                "h-6 w-6 rounded border transition-shadow",
-                                copyrightColor.toLowerCase() === p.c.toLowerCase()
-                                  ? "border-primary ring-2 ring-primary/40"
-                                  : "border-border",
-                              )}
-                              style={{ backgroundColor: p.c }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </>
+        {/* ===== Middle column (40%): Preview ===== */}
+        <div className="border-r border-border min-h-0 flex flex-col bg-muted/20">
+          {/* Sticky controls (size selector only) */}
+          <div className="p-4 border-b border-border bg-muted/20 flex items-center justify-end gap-2 flex-wrap">
+            {([
+              { id: "main", label: "1080×1350" },
+              { id: "vertical", label: "1080×1920" },
+              { id: "square", label: "1080×1080" },
+            ] as const).map((s) => {
+              const active = previewSize === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setPreviewSize(s.id)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
+                    active
+                      ? "text-white border-transparent shadow-sm"
+                      : "bg-background border-border text-muted-foreground hover:bg-muted",
                   )}
-                </div>
-              </div>
+                  style={
+                    active
+                      ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
+                      : undefined
+                  }
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
 
-              {/* Right: size selector */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {([
-                  { id: "main", label: "1080×1350" },
-                  { id: "vertical", label: "1080×1920" },
-                  { id: "square", label: "1080×1080" },
-                ] as const).map((s) => {
-                  const active = previewSize === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setPreviewSize(s.id)}
-                      className={cn(
-                        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
-                        active
-                          ? "text-white border-transparent shadow-sm"
-                          : "bg-background border-border text-muted-foreground hover:bg-muted",
-                      )}
-                      style={
-                        active
-                          ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
-                          : undefined
-                      }
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
+          {/* Preview canvas area (no scroll, fills remaining space) */}
+          <div ref={previewAreaRef} className="flex-1 min-h-0 p-6 flex items-center justify-center overflow-hidden">
 
             {(() => {
               const sizes = {
@@ -589,14 +465,15 @@ const CreateFrames = () => {
               const offsetX = (canvasW - innerW) / 2;
               const offsetY = (canvasH - innerH) / 2;
               // Fit canvas to available preview area width and height
-              const maxW = Math.max(160, previewAreaWidth - 48); // padding
-              const maxH = Math.max(200, previewAreaHeight - 120); // size buttons + padding
+              const maxW = Math.max(160, previewAreaWidth - 48);
+              const maxH = Math.max(200, previewAreaHeight - 48);
               const ratio = Math.min(maxW / canvasW, maxH / canvasH);
               const dispW = canvasW * ratio;
               const dispH = canvasH * ratio;
 
               return (
-                <div className="flex justify-center w-full">
+                <div className="flex items-center justify-center">
+
                   <div
                     className="relative rounded-lg overflow-hidden shadow-sm border border-border"
                     style={{
@@ -711,9 +588,12 @@ const CreateFrames = () => {
               );
             })()}
           </div>
+        </div>
 
-          {/* Text edit panel */}
-          <div className="border-l border-border overflow-y-auto p-5 space-y-5 bg-background">
+        {/* ===== Right column (30%): Settings panel (scrollable) ===== */}
+        <div className="overflow-y-auto p-5 space-y-6 bg-background min-h-0">
+          {/* ① Text settings */}
+          <section className="space-y-5">
             <h2 className="text-sm font-semibold">テキスト設定</h2>
 
             <div className="flex gap-2">
@@ -894,7 +774,157 @@ const CreateFrames = () => {
                 </>
               )}
             </div>
-          </div>
+          </section>
+
+          {/* ② Frame settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">フレーム設定</h2>
+            <div className={cn(
+              "flex items-center gap-2 text-xs",
+              defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
+            )}>
+              <Switch
+                checked={showFrame && !!defaultFrameAsset}
+                onCheckedChange={setShowFrame}
+                disabled={!defaultFrameAsset}
+              />
+              <span className="whitespace-nowrap">
+                {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">フレーム選択</Label>
+              <Select
+                value={defaultFrameAsset?.id ?? ""}
+                onValueChange={() => {}}
+                disabled={mediaFrameAssets.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="フレーム未登録" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mediaFrameAssets.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
+
+          {/* ③ Logo settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">ロゴ設定</h2>
+            <div className="space-y-1">
+              <Label className="text-xs">ロゴ選択</Label>
+              <Select value={logoId} onValueChange={setLogoId} disabled={!selectedMaster}>
+                <SelectTrigger>
+                  <SelectValue placeholder="ロゴなし" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ロゴなし</SelectItem>
+                  {availableLogos.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
+
+          {/* ④ Copyright settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">コピーライト設定</h2>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+              <span className="whitespace-nowrap">コピーライトを表示</span>
+            </div>
+            {showCopyright && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs">フォントサイズ：{copyrightSize}px</Label>
+                  <Slider
+                    value={[copyrightSize]}
+                    min={8}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setCopyrightSize(v[0])}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">フォント</Label>
+                  <Select value={copyrightFont} onValueChange={setCopyrightFont}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">カラー</Label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      type="color"
+                      value={copyrightColor}
+                      onChange={(e) => setCopyrightColor(e.target.value)}
+                      className="h-9 w-14 cursor-pointer rounded border border-border bg-background p-0"
+                    />
+                    <div className="flex items-center gap-1">
+                      {[
+                        { c: "#FFFFFF", label: "白" },
+                        { c: "#000000", label: "黒" },
+                        { c: "#888888", label: "グレー" },
+                      ].map((p) => (
+                        <button
+                          key={p.c}
+                          type="button"
+                          onClick={() => setCopyrightColor(p.c)}
+                          title={p.label}
+                          className={cn(
+                            "h-7 w-7 rounded border transition-shadow",
+                            copyrightColor.toLowerCase() === p.c.toLowerCase()
+                              ? "border-primary ring-2 ring-primary/40"
+                              : "border-border",
+                          )}
+                          style={{ backgroundColor: p.c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">位置</Label>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {([
+                      { id: "bottom-left", label: "左下" },
+                      { id: "bottom-right", label: "右下" },
+                      { id: "top-left", label: "左上" },
+                      { id: "top-right", label: "右上" },
+                    ] as const).map((p) => {
+                      const active = copyrightPos === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setCopyrightPos(p.id)}
+                          className={cn(
+                            "rounded px-2 py-1 text-xs border transition-colors",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-border text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
         </div>
       </div>
     </>
