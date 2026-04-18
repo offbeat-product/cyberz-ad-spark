@@ -100,18 +100,34 @@ const CreateFrames = () => {
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
-  const presetToCoord = (p: CopyrightPos): { x: number; y: number } => {
-    switch (p) {
-      case "bottom-left": return { x: 1, y: 99 };
-      case "bottom-right": return { x: 99, y: 99 };
-      case "top-left": return { x: 1, y: 1 };
-      case "top-right": return { x: 99, y: 1 };
-    }
-  };
+  // Inner comic area is 1080 x 1350 px (canvas coords)
+  const CANVAS_W = 1080;
+  const CANVAS_H = 1350;
+  const PRESET_PADDING = 8;
+  // Position is stored in canvas px (top-left of the element)
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>(() =>
-    presetToCoord("bottom-left"),
-  );
+  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>({ x: PRESET_PADDING, y: CANVAS_H - 40 });
+  // Last measured element size in canvas px (kept in a ref for clamp math)
+  const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+
+  const clampCoord = (x: number, y: number) => {
+    const { w, h } = copyrightSizeRef.current;
+    const maxX = Math.max(0, CANVAS_W - w);
+    const maxY = Math.max(0, CANVAS_H - h);
+    return {
+      x: Math.max(0, Math.min(maxX, x)),
+      y: Math.max(0, Math.min(maxY, y)),
+    };
+  };
+  const applyPreset = (p: CopyrightPos) => {
+    const { w, h } = copyrightSizeRef.current;
+    let x = PRESET_PADDING;
+    let y = PRESET_PADDING;
+    if (p === "bottom-left" || p === "bottom-right") y = Math.max(0, CANVAS_H - h - PRESET_PADDING);
+    if (p === "top-right" || p === "bottom-right") x = Math.max(0, CANVAS_W - w - PRESET_PADDING);
+    return { x, y };
+  };
+
   // Undo/redo history (past + future stacks of coords, max 20 each)
   const undoStackRef = useRef<{ x: number; y: number }[]>([]);
   const redoStackRef = useRef<{ x: number; y: number }[]>([]);
@@ -119,12 +135,6 @@ const CreateFrames = () => {
     undoStackRef.current.push(prev);
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
-  };
-  const setCopyrightCoord = (next: { x: number; y: number }, recordHistory = true) => {
-    setCopyrightCoordState((curr) => {
-      if (recordHistory) pushHistory(curr);
-      return next;
-    });
   };
   const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
   const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
