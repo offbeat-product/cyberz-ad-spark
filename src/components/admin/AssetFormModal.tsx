@@ -116,74 +116,76 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-        <div className="grid grid-cols-[60%_40%] max-h-[90vh]">
-          <div className="overflow-y-auto p-6 border-r border-border">
-            <DialogHeader className="mb-4">
-              <DialogTitle>
-                {title}を{editing ? "編集" : "追加"}
-              </DialogTitle>
-              <DialogDescription>
-                {title}画像と表示位置・サイズを設定します。
-              </DialogDescription>
-            </DialogHeader>
+      <DialogContent className="w-[900px] max-w-[95vw] h-[85vh] max-h-[800px] overflow-hidden p-0 sm:rounded-lg">
+        <div className="grid h-full grid-cols-2">
+          <div className="flex h-full flex-col overflow-hidden border-r border-border">
+            <div className="flex-1 overflow-y-auto p-6">
+              <DialogHeader className="mb-4">
+                <DialogTitle>
+                  {title}を{editing ? "編集" : "追加"}
+                </DialogTitle>
+                <DialogDescription>
+                  {title}画像と表示位置・サイズを設定します。
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <Label>
-                  名前 <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder={kind === "frame" ? "例：通常版" : "例：通常版・小サイズ"}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>画像</Label>
-                <ImageDropzone
-                  value={form.imageUrl}
-                  onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>位置・サイズ</Label>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["x", "y", "w", "h"] as const).map((k) => (
-                    <div key={k} className="space-y-1">
-                      <span className="text-xs text-muted-foreground">
-                        {k === "w" ? "幅" : k === "h" ? "高さ" : k.toUpperCase()} (px)
-                      </span>
-                      <Input
-                        type="number"
-                        value={form.position[k]}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            position: { ...form.position, [k]: Number(e.target.value) },
-                          })
-                        }
-                      />
-                    </div>
-                  ))}
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label>
+                    名前 <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder={kind === "frame" ? "例：通常版" : "例：通常版・小サイズ"}
+                  />
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isDefault"
-                  checked={form.isDefault}
-                  onCheckedChange={(v) => setForm({ ...form, isDefault: !!v })}
-                />
-                <Label htmlFor="isDefault" className="cursor-pointer">
-                  デフォルトに設定する
-                </Label>
+                <div className="space-y-2">
+                  <Label>画像</Label>
+                  <ImageDropzone
+                    value={form.imageUrl}
+                    onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>位置・サイズ</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {(["x", "y", "w", "h"] as const).map((k) => (
+                      <div key={k} className="space-y-1">
+                        <span className="text-xs text-muted-foreground">
+                          {k === "w" ? "幅" : k === "h" ? "高さ" : k.toUpperCase()} (px)
+                        </span>
+                        <Input
+                          type="number"
+                          value={form.position[k]}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              position: { ...form.position, [k]: Number(e.target.value) },
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="isDefault"
+                    checked={form.isDefault}
+                    onCheckedChange={(v) => setForm({ ...form, isDefault: !!v })}
+                  />
+                  <Label htmlFor="isDefault" className="cursor-pointer">
+                    デフォルトに設定する
+                  </Label>
+                </div>
               </div>
             </div>
 
-            <DialogFooter className="mt-6">
+            <DialogFooter className="border-t border-border bg-background px-6 py-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 キャンセル
               </Button>
@@ -191,11 +193,14 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
             </DialogFooter>
           </div>
 
-          <div className="overflow-y-auto bg-muted/20 p-6">
-            <div className="space-y-3">
+          <div className="flex h-full flex-col overflow-hidden bg-muted/20 p-6">
+            <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">プレビュー</span>
+              <span className="text-xs text-muted-foreground">1080×1350</span>
+            </div>
+            <div className="flex flex-1 items-center justify-center overflow-hidden">
               <div
-                className="relative w-full overflow-hidden rounded-lg border border-border bg-white"
+                className="relative h-full max-h-full w-auto overflow-hidden rounded-lg border border-border bg-black"
                 style={{ aspectRatio: `${CANVAS_W} / ${CANVAS_H}` }}
               >
                 <div
@@ -205,7 +210,6 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                     width: CANVAS_W,
                     height: CANVAS_H,
                     transform: `scale(${scale})`,
-                    backgroundColor: "#000",
                   }}
                 >
                   {form.imageUrl && (
@@ -229,10 +233,10 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                プレビュー上でドラッグして位置を調整できます（1080×1350）
-              </p>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              プレビュー上でドラッグして位置を調整できます
+            </p>
           </div>
         </div>
       </DialogContent>
