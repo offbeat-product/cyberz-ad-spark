@@ -94,6 +94,11 @@ const CreateFrames = () => {
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
 
+  // Layer visibility / logo selection
+  const [showFrame, setShowFrame] = useState(true);
+  const [showCopyright, setShowCopyright] = useState(true);
+  const [logoId, setLogoId] = useState<string>("");
+
   // Resolve defaults from the selected media master (matched by id)
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const mediaDefaults = {
@@ -105,8 +110,27 @@ const CreateFrames = () => {
   const defaultFrameAsset = selectedMaster
     ? masterFrames.find((f) => f.mediaMasterId === selectedMaster.id && f.isDefault)
     : undefined;
-  const defaultLogoAsset = selectedMaster
-    ? masterLogos.find((l) => l.mediaMasterId === selectedMaster.id && l.isDefault)
+  const availableLogos = selectedMaster
+    ? masterLogos.filter((l) => l.mediaMasterId === selectedMaster.id)
+    : [];
+  const defaultLogoAsset = availableLogos.find((l) => l.isDefault);
+
+  // Initialize logo selection when media changes
+  useEffect(() => {
+    if (!selectedMaster) {
+      setLogoId("");
+      return;
+    }
+    if (selectedMaster.noLogo) {
+      setLogoId("none");
+    } else {
+      setLogoId(defaultLogoAsset?.id ?? "none");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMaster?.id]);
+
+  const activeLogoAsset = logoId && logoId !== "none"
+    ? availableLogos.find((l) => l.id === logoId)
     : undefined;
 
   // Bulk upload state
