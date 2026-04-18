@@ -108,22 +108,14 @@ const CreateFrames = () => {
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
   const PRESET_PADDING = 8;
-  // Position is stored in canvas px (top-left of the element)
+  // Position is stored as preset + offset; final coord = preset + offset
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightCoord, setCopyrightCoordState] = useState<{ x: number; y: number }>({ x: PRESET_PADDING, y: CANVAS_H - 40 });
-  // Last measured element size in canvas px (kept in a ref for clamp math)
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Last measured element size in canvas px (kept in a ref for preset math)
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  const clampCoord = (x: number, y: number) => {
-    const { w, h } = copyrightSizeRef.current;
-    const maxX = Math.max(0, CANVAS_W - w);
-    const maxY = Math.max(0, CANVAS_H - h);
-    return {
-      x: Math.max(0, Math.min(maxX, x)),
-      y: Math.max(0, Math.min(maxY, y)),
-    };
-  };
-  const applyPreset = (p: CopyrightPos) => {
+  // プリセット位置を計算（フォントサイズ＝要素サイズ変化に追従）
+  const computePresetCoord = (p: CopyrightPos) => {
     const { w, h } = copyrightSizeRef.current;
     let x = PRESET_PADDING;
     if (p.endsWith("-center")) x = Math.max(0, (CANVAS_W - w) / 2);
@@ -134,11 +126,17 @@ const CreateFrames = () => {
     return { x, y };
   };
 
-  // Undo/redo history (past + future stacks of coords, max 20 each)
-  const undoStackRef = useRef<{ x: number; y: number }[]>([]);
-  const redoStackRef = useRef<{ x: number; y: number }[]>([]);
-  const pushHistory = (prev: { x: number; y: number }) => {
-    undoStackRef.current.push(prev);
+  // 最終表示座標 = プリセット位置 + オフセット
+  const copyrightCoord = (() => {
+    const base = computePresetCoord(copyrightPos);
+    return { x: base.x + copyrightOffset.x, y: base.y + copyrightOffset.y };
+  })();
+
+  // Undo/Redo: snapshot of {pos, offset}
+  const undoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  const redoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  const pushHistory = () => {
+    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
   };
@@ -214,20 +212,18 @@ const CreateFrames = () => {
   const undoCopyright = () => {
     const prev = undoStackRef.current.pop();
     if (!prev) return;
-    setCopyrightCoordState((curr) => {
-      redoStackRef.current.push(curr);
-      if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-      return prev;
-    });
+    redoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    if (redoStackRef.current.length > 20) redoStackRef.current.shift();
+    setCopyrightPos(prev.pos);
+    setCopyrightOffset(prev.offset);
   };
   const redoCopyright = () => {
     const next = redoStackRef.current.pop();
     if (!next) return;
-    setCopyrightCoordState((curr) => {
-      undoStackRef.current.push(curr);
-      if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-      return next;
-    });
+    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+    setCopyrightPos(next.pos);
+    setCopyrightOffset(next.offset);
   };
 
   // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo
@@ -672,25 +668,16 @@ const CreateFrames = () => {
                             canvasH={CANVAS_H}
                             scale={ratio}
                             onSizeChange={(w, h) => {
-                              const prev = copyrightSizeRef.current;
                               copyrightSizeRef.current = { w, h };
-
-                              setCopyrightCoordState((curr) => {
-                                // 初回測定（prev.h が 0 or 未設定）のときは差分計算しない
-                                const deltaH = prev.h > 0 ? h - prev.h : 0;
-
-                                // 要素の中心位置でアンカー判定：下半分なら「下端固定」、上半分なら「上端固定」
-                                const prevH = prev.h > 0 ? prev.h : h;
-                                const elementCenterY = curr.y + prevH / 2;
-                                const isBottomAligned = elementCenterY > CANVAS_H / 2;
-
-                                // 下端アンカー時は高さ増加分だけ y を上にずらす → 下端が固定される
-                                const adjustedY = isBottomAligned ? curr.y - deltaH : curr.y;
-                                return clampCoord(curr.x, adjustedY);
+                            }}
+                            onDragStart={() => pushHistory()}
+                            onDrag={(nx, ny) => {
+                              const base = computePresetCoord(copyrightPos);
+                              setCopyrightOffset({
+                                x: nx - base.x,
+                                y: ny - base.y,
                               });
                             }}
-                            onDragStart={() => pushHistory(copyrightCoord)}
-                            onDrag={(nx, ny) => setCopyrightCoordState(clampCoord(nx, ny))}
                           />
                         )}
                       </div>
@@ -873,9 +860,9 @@ const CreateFrames = () => {
                               key={p.id}
                               type="button"
                               onClick={() => {
-                                pushHistory(copyrightCoord);
+                                pushHistory();
                                 setCopyrightPos(p.id);
-                                setCopyrightCoordState(applyPreset(p.id));
+                                setCopyrightOffset({ x: 0, y: 0 });
                               }}
                               className={cn(
                                 "aspect-square rounded border text-[10px] transition-colors",
@@ -890,40 +877,50 @@ const CreateFrames = () => {
                         })}
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">座標(px)</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">X (0〜{CANVAS_W})</Label>
+                          <Label className="text-[10px] text-muted-foreground">X (px)</Label>
                           <Input
                             type="number"
-                            min={0}
-                            max={CANVAS_W}
-                            value={Math.round(copyrightCoord.x)}
+                            min={-500}
+                            max={500}
+                            value={Math.round(copyrightOffset.x)}
                             onChange={(e) => {
                               const nx = Number(e.target.value);
                               if (Number.isNaN(nx)) return;
-                              pushHistory(copyrightCoord);
-                              setCopyrightCoordState(clampCoord(nx, copyrightCoord.y));
+                              pushHistory();
+                              setCopyrightOffset((prev) => ({ ...prev, x: nx }));
                             }}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Y (0〜{CANVAS_H})</Label>
+                          <Label className="text-[10px] text-muted-foreground">Y (px)</Label>
                           <Input
                             type="number"
-                            min={0}
-                            max={CANVAS_H}
-                            value={Math.round(copyrightCoord.y)}
+                            min={-500}
+                            max={500}
+                            value={Math.round(copyrightOffset.y)}
                             onChange={(e) => {
                               const ny = Number(e.target.value);
                               if (Number.isNaN(ny)) return;
-                              pushHistory(copyrightCoord);
-                              setCopyrightCoordState(clampCoord(copyrightCoord.x, ny));
+                              pushHistory();
+                              setCopyrightOffset((prev) => ({ ...prev, y: ny }));
                             }}
                           />
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          pushHistory();
+                          setCopyrightOffset({ x: 0, y: 0 });
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-primary underline"
+                      >
+                        オフセットをリセット
+                      </button>
                     </div>
                   </>
                 )}
