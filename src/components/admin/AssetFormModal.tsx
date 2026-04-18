@@ -32,6 +32,8 @@ interface Props {
   kind: "frame" | "logo";
   initial?: AssetFormValue | null;
   onSave: (value: AssetFormValue) => void;
+  /** Default frame image to render behind logos in the preview (logo kind only). */
+  defaultFrameUrl?: string | null;
 }
 
 const blank = (kind: "frame" | "logo"): AssetFormValue => ({
@@ -46,7 +48,7 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
 
 const HISTORY_MAX = 20;
 
-const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) => {
+const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFrameUrl }: Props) => {
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -67,6 +69,10 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
     }
   }, [open, initial, kind]);
 
+  // Canvas dims: logos always preview on a fixed 1080x1350 stage.
+  const canvasW = kind === "logo" ? 1080 : Math.max(form.position.w, 1);
+  const canvasH = kind === "logo" ? 1350 : Math.max(form.position.h, 1);
+
   // Recompute scale to fit canvas inside parent (both width and height)
   useEffect(() => {
     const compute = () => {
@@ -75,8 +81,8 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
       const cw = canvas.clientWidth;
       const ch = canvas.clientHeight;
       if (cw > 0 && ch > 0) {
-        const sx = cw / Math.max(form.position.w, 1);
-        const sy = ch / Math.max(form.position.h, 1);
+        const sx = cw / canvasW;
+        const sy = ch / canvasH;
         setScale(Math.min(sx, sy));
       }
     };
@@ -84,7 +90,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
     const ro = new ResizeObserver(compute);
     if (canvasRef.current) ro.observe(canvasRef.current);
     return () => ro.disconnect();
-  }, [open, form.position.w, form.position.h]);
+  }, [open, canvasW, canvasH]);
 
   const commitPosition = (next: Box) => {
     const prev = lastCommittedRef.current;
@@ -324,7 +330,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">プレビュー</span>
               <span className="text-xs text-muted-foreground">
-                {form.position.w}×{form.position.h}
+                {canvasW}×{canvasH}
               </span>
             </div>
             <div className="flex flex-1 justify-center overflow-hidden min-h-0">
@@ -332,7 +338,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                 ref={canvasRef}
                 className="relative overflow-hidden rounded-lg"
                 style={{
-                  aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
+                  aspectRatio: `${canvasW} / ${canvasH}`,
                   width: "100%",
                   maxHeight: "100%",
                   border: "1px solid #e0e0e0",
@@ -344,11 +350,25 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                   ref={stageRef}
                   className="absolute left-0 top-0 origin-top-left"
                   style={{
-                    width: Math.max(form.position.w, 1),
-                    height: Math.max(form.position.h, 1),
+                    width: canvasW,
+                    height: canvasH,
                     transform: `scale(${scale})`,
                   }}
                 >
+                  {/* Default frame as background (logos only) */}
+                  {kind === "logo" && defaultFrameUrl && (
+                    <img
+                      src={defaultFrameUrl}
+                      alt="frame background"
+                      draggable={false}
+                      className="absolute left-0 top-0 select-none pointer-events-none"
+                      style={{
+                        width: canvasW,
+                        height: canvasH,
+                        objectFit: "contain",
+                      }}
+                    />
+                  )}
                   {form.imageUrl && (
                     <img
                       src={form.imageUrl}
