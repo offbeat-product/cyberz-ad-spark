@@ -590,11 +590,14 @@ const CreateFrames = () => {
                         )}
 
                         {/* ⑥ Copyright */}
-                        {basic.copyright && (
+                        {showCopyright && basic.copyright && (
                           <div
-                            className="absolute bottom-3 right-4 text-white/90 select-none pointer-events-none"
+                            className="absolute select-none pointer-events-none"
                             style={{
-                              fontSize: 18,
+                              left: 8,
+                              bottom: 8,
+                              color: "#FFFFFF",
+                              fontSize: 14,
                               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                             }}
                           >
