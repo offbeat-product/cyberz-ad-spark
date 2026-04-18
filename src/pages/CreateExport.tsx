@@ -287,9 +287,15 @@ const CreateExport = () => {
 
           {/* BGM Presets */}
           <section className="rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Music className="h-4 w-4 text-primary" />
-              <h2 className="font-semibold">BGMプリセット</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Music className="h-4 w-4 text-primary" />
+                <h2 className="font-semibold">BGMプリセット</h2>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Dices className="h-3.5 w-3.5" />
+                <span>= ランダム選択</span>
+              </div>
             </div>
             <div className="space-y-3">
               {BGM_CATEGORIES.map((cat) => {
