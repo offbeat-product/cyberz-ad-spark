@@ -774,7 +774,157 @@ const CreateFrames = () => {
                 </>
               )}
             </div>
-          </div>
+          </section>
+
+          {/* ② Frame settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">フレーム設定</h2>
+            <div className={cn(
+              "flex items-center gap-2 text-xs",
+              defaultFrameAsset ? "text-muted-foreground" : "text-muted-foreground/50"
+            )}>
+              <Switch
+                checked={showFrame && !!defaultFrameAsset}
+                onCheckedChange={setShowFrame}
+                disabled={!defaultFrameAsset}
+              />
+              <span className="whitespace-nowrap">
+                {defaultFrameAsset ? "フレームを表示" : "フレーム未登録"}
+              </span>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">フレーム選択</Label>
+              <Select
+                value={defaultFrameAsset?.id ?? ""}
+                onValueChange={() => {}}
+                disabled={mediaFrameAssets.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="フレーム未登録" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mediaFrameAssets.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
+
+          {/* ③ Logo settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">ロゴ設定</h2>
+            <div className="space-y-1">
+              <Label className="text-xs">ロゴ選択</Label>
+              <Select value={logoId} onValueChange={setLogoId} disabled={!selectedMaster}>
+                <SelectTrigger>
+                  <SelectValue placeholder="ロゴなし" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">ロゴなし</SelectItem>
+                  {availableLogos.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </section>
+
+          {/* ④ Copyright settings */}
+          <section className="space-y-3 border-t border-border pt-5">
+            <h2 className="text-sm font-semibold">コピーライト設定</h2>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+              <span className="whitespace-nowrap">コピーライトを表示</span>
+            </div>
+            {showCopyright && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs">フォントサイズ：{copyrightSize}px</Label>
+                  <Slider
+                    value={[copyrightSize]}
+                    min={8}
+                    max={100}
+                    step={1}
+                    onValueChange={(v) => setCopyrightSize(v[0])}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">フォント</Label>
+                  <Select value={copyrightFont} onValueChange={setCopyrightFont}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
+                        <SelectItem key={f} value={f}>{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">カラー</Label>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <input
+                      type="color"
+                      value={copyrightColor}
+                      onChange={(e) => setCopyrightColor(e.target.value)}
+                      className="h-9 w-14 cursor-pointer rounded border border-border bg-background p-0"
+                    />
+                    <div className="flex items-center gap-1">
+                      {[
+                        { c: "#FFFFFF", label: "白" },
+                        { c: "#000000", label: "黒" },
+                        { c: "#888888", label: "グレー" },
+                      ].map((p) => (
+                        <button
+                          key={p.c}
+                          type="button"
+                          onClick={() => setCopyrightColor(p.c)}
+                          title={p.label}
+                          className={cn(
+                            "h-7 w-7 rounded border transition-shadow",
+                            copyrightColor.toLowerCase() === p.c.toLowerCase()
+                              ? "border-primary ring-2 ring-primary/40"
+                              : "border-border",
+                          )}
+                          style={{ backgroundColor: p.c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">位置</Label>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {([
+                      { id: "bottom-left", label: "左下" },
+                      { id: "bottom-right", label: "右下" },
+                      { id: "top-left", label: "左上" },
+                      { id: "top-right", label: "右上" },
+                    ] as const).map((p) => {
+                      const active = copyrightPos === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setCopyrightPos(p.id)}
+                          className={cn(
+                            "rounded px-2 py-1 text-xs border transition-colors",
+                            active
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-background border-border text-muted-foreground hover:bg-muted",
+                          )}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </section>
         </div>
       </div>
     </>
