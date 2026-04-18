@@ -449,25 +449,23 @@ const CreateFrames = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-                    コピーライトを表示
+                    <span>コピーライトを表示</span>
                     {showCopyright && (
-                      <>
-                        <div className="flex items-center gap-2 ml-2">
-                          <Slider
-                            value={[copyrightSize]}
-                            min={8}
-                            max={24}
-                            step={1}
-                            onValueChange={(v) => setCopyrightSize(v[0])}
-                            className="w-24"
-                          />
-                          <span className="text-xs tabular-nums w-10">{copyrightSize}px</span>
-                        </div>
-                      </>
+                      <div className="flex items-center gap-2 ml-2">
+                        <Slider
+                          value={[copyrightSize]}
+                          min={8}
+                          max={100}
+                          step={1}
+                          onValueChange={(v) => setCopyrightSize(v[0])}
+                          className="w-32"
+                        />
+                        <span className="text-xs tabular-nums w-12">{copyrightSize}px</span>
+                      </div>
                     )}
-                  </label>
+                  </div>
                   {showCopyright && (
                     <div className="flex items-center gap-1">
                       {([
