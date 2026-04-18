@@ -117,30 +117,6 @@ const CreateFrames = () => {
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
 
-  // Apply media defaults to existing frames once on first open (only frames untouched by user).
-  // We treat the initial seed frames (display 2.0 / transitionTime 0.3 / transition "フェード") as untouched.
-  const appliedDefaultsRef = useRef(false);
-  useEffect(() => {
-    if (appliedDefaultsRef.current) return;
-    if (!selectedMaster) return;
-    appliedDefaultsRef.current = true;
-    setFrames((prev) =>
-      prev.map((f) => {
-        const untouched =
-          f.display === 2.0 && f.transitionTime === 0.3 && f.transition === "フェード";
-        return untouched
-          ? {
-              ...f,
-              display: mediaDefaults.display,
-              transitionTime: mediaDefaults.transitionTime,
-              transition: mediaDefaults.transition,
-            }
-          : f;
-      }),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMaster?.id]);
-
   useEffect(() => {
     if (!selectedId && frames[0]) setSelectedId(frames[0].id);
   }, [frames, selectedId]);
@@ -162,6 +138,41 @@ const CreateFrames = () => {
       },
     ]);
     setSelectedId(id);
+  };
+
+  // Reorder / delete handlers
+  const moveFrame = (from: number, to: number) => {
+    if (to < 0 || to >= frames.length) return;
+    setFrames((prev) => arrayMove(prev, from, to));
+  };
+
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const requestDelete = (id: string) => setPendingDeleteId(id);
+  const confirmDelete = () => {
+    if (!pendingDeleteId) return;
+    setFrames((prev) => prev.filter((f) => f.id !== pendingDeleteId));
+    if (selectedId === pendingDeleteId) {
+      const remaining = frames.filter((f) => f.id !== pendingDeleteId);
+      setSelectedId(remaining[0]?.id ?? "");
+    }
+    setPendingDeleteId(null);
+  };
+
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFrames((prev) => {
+      const oldIndex = prev.findIndex((f) => f.id === active.id);
+      const newIndex = prev.findIndex((f) => f.id === over.id);
+      if (oldIndex < 0 || newIndex < 0) return prev;
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   const handleBulkFiles = async (fileList: FileList | null) => {
