@@ -63,8 +63,17 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { basic, frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { media } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
+
+  // Resolve defaults from the selected media master (basic.media holds the name)
+  const selectedMaster = media.find((m) => m.name === basic.media);
+  const mediaDefaults = {
+    display: selectedMaster?.displaySec ?? 2.0,
+    transitionTime: selectedMaster?.switchSec ?? 0.3,
+    transition: selectedMaster ? transitionKeyToLabel[selectedMaster.transition] : "フェード",
+  };
 
   // Bulk upload state
   const bulkInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +91,30 @@ const CreateFrames = () => {
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
 
+  // Apply media defaults to existing frames once on first open (only frames untouched by user).
+  // We treat the initial seed frames (display 2.0 / transitionTime 0.3 / transition "フェード") as untouched.
+  const appliedDefaultsRef = useRef(false);
+  useEffect(() => {
+    if (appliedDefaultsRef.current) return;
+    if (!selectedMaster) return;
+    appliedDefaultsRef.current = true;
+    setFrames((prev) =>
+      prev.map((f) => {
+        const untouched =
+          f.display === 2.0 && f.transitionTime === 0.3 && f.transition === "フェード";
+        return untouched
+          ? {
+              ...f,
+              display: mediaDefaults.display,
+              transitionTime: mediaDefaults.transitionTime,
+              transition: mediaDefaults.transition,
+            }
+          : f;
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMaster?.id]);
+
   useEffect(() => {
     if (!selectedId && frames[0]) setSelectedId(frames[0].id);
   }, [frames, selectedId]);
@@ -92,7 +125,16 @@ const CreateFrames = () => {
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => [...prev, { id, display: 2.0, transitionTime: 0.3, transition: "フェード", image: null }]);
+    setFrames((prev) => [
+      ...prev,
+      {
+        id,
+        display: mediaDefaults.display,
+        transitionTime: mediaDefaults.transitionTime,
+        transition: mediaDefaults.transition,
+        image: null,
+      },
+    ]);
     setSelectedId(id);
   };
 
