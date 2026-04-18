@@ -695,7 +695,8 @@ const CreateFrames = () => {
                               ...(copyrightPos === "bottom-right" && { right: 8, bottom: 8 }),
                               ...(copyrightPos === "top-left" && { left: 8, top: 8 }),
                               ...(copyrightPos === "top-right" && { right: 8, top: 8 }),
-                              color: "#FFFFFF",
+                              color: copyrightColor,
+                              fontFamily: copyrightFont,
                               fontSize: copyrightSize,
                               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                             }}
