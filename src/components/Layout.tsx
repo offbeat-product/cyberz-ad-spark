@@ -9,7 +9,7 @@ const navItems = [
 
 const Layout = () => {
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside className="w-60 border-r border-border bg-sidebar flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-border">
