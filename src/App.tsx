@@ -10,6 +10,7 @@ import CreateFrames from "./pages/CreateFrames";
 import CreateExport from "./pages/CreateExport";
 import AdminMedia from "./pages/AdminMedia";
 import NotFound from "./pages/NotFound";
+import { CreateFlowProvider } from "./contexts/CreateFlowContext";
 
 const queryClient = new QueryClient();
 
@@ -19,16 +20,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/create" element={<CreateBasic />} />
-            <Route path="/create/frames" element={<CreateFrames />} />
-            <Route path="/create/export" element={<CreateExport />} />
-            <Route path="/admin/media" element={<AdminMedia />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <CreateFlowProvider>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/create" element={<CreateBasic />} />
+              <Route path="/create/frames" element={<CreateFrames />} />
+              <Route path="/create/export" element={<CreateExport />} />
+              <Route path="/admin/media" element={<AdminMedia />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </CreateFlowProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
