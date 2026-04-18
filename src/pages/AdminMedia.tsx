@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
-import { Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -30,7 +31,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import MediaPreview, { Box, Transition } from "@/components/admin/MediaPreview";
+import type { Box, Transition } from "@/components/admin/MediaPreview";
+import TransitionDemo from "@/components/admin/TransitionDemo";
+import AssetFormModal, { AssetFormValue } from "@/components/admin/AssetFormModal";
 
 const transitionLabels: Record<Transition, string> = {
   none: "なし",
@@ -43,128 +46,180 @@ const transitionLabels: Record<Transition, string> = {
 const switchPresets = [0.2, 0.3, 0.5, 0.8, 1.0];
 const displayPresets = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0];
 
-interface Media {
+interface Frame {
+  id: string;
+  mediaMasterId: string;
+  name: string;
+  imageUrl: string | null;
+  position: Box;
+  isDefault: boolean;
+}
+
+interface Logo {
+  id: string;
+  mediaMasterId: string;
+  name: string;
+  imageUrl: string | null;
+  position: Box;
+  isDefault: boolean;
+}
+
+interface MediaMaster {
   id: string;
   name: string;
-  frameImage: string | null;
-  logoImage: string | null;
-  framePos: Box;
-  logoPos: Box;
-  frameVisible: boolean;
-  logoVisible: boolean;
   transition: Transition;
   switchSec: number;
   displaySec: number;
   bgColor: string;
+  noLogo: boolean;
 }
 
-const initial: Media[] = [
-  {
-    id: "1",
-    name: "ピッコマ",
-    frameImage: null,
-    logoImage: null,
-    framePos: { x: 0, y: 0, w: 1080, h: 1350 },
-    logoPos: { x: 40, y: 40, w: 200, h: 80 },
-    frameVisible: true,
-    logoVisible: true,
-    transition: "fade",
-    switchSec: 0.3,
-    displaySec: 2.0,
-    bgColor: "#000000",
-  },
-  {
-    id: "2",
-    name: "コミックシーモア",
-    frameImage: null,
-    logoImage: null,
-    framePos: { x: 0, y: 0, w: 1080, h: 1080 },
-    logoPos: { x: 40, y: 40, w: 200, h: 80 },
-    frameVisible: true,
-    logoVisible: true,
-    transition: "slide-lr",
-    switchSec: 0.5,
-    displaySec: 2.5,
-    bgColor: "#000000",
-  },
-  {
-    id: "3",
-    name: "まんが王国",
-    frameImage: null,
-    logoImage: null,
-    framePos: { x: 0, y: 0, w: 1080, h: 1920 },
-    logoPos: { x: 40, y: 40, w: 200, h: 80 },
-    frameVisible: true,
-    logoVisible: true,
-    transition: "zoom-in",
-    switchSec: 0.3,
-    displaySec: 3.0,
-    bgColor: "#000000",
-  },
+const initialMedia: MediaMaster[] = [
+  { id: "1", name: "ピッコマ", transition: "fade", switchSec: 0.3, displaySec: 2.0, bgColor: "#000000", noLogo: false },
+  { id: "2", name: "コミックシーモア", transition: "slide-lr", switchSec: 0.5, displaySec: 2.5, bgColor: "#000000", noLogo: false },
+  { id: "3", name: "まんが王国", transition: "zoom-in", switchSec: 0.3, displaySec: 3.0, bgColor: "#000000", noLogo: false },
 ];
 
-const blankForm = (): Omit<Media, "id"> => ({
+const blankMaster = (): Omit<MediaMaster, "id"> => ({
   name: "",
-  frameImage: null,
-  logoImage: null,
-  framePos: { x: 0, y: 0, w: 1080, h: 1350 },
-  logoPos: { x: 40, y: 40, w: 200, h: 80 },
-  frameVisible: true,
-  logoVisible: true,
   transition: "fade",
   switchSec: 0.3,
   displaySec: 2.0,
   bgColor: "#000000",
+  noLogo: false,
 });
 
-const AdminMedia = () => {
-  const [media, setMedia] = useState<Media[]>(initial);
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<Omit<Media, "id">>(blankForm());
-  const frameInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+const uid = () => Math.random().toString(36).slice(2, 10);
 
-  const handleFile = (file: File | undefined, key: "frameImage" | "logoImage") => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((p) => ({ ...p, [key]: reader.result as string }));
-    reader.readAsDataURL(file);
+const AdminMedia = () => {
+  const [media, setMedia] = useState<MediaMaster[]>(initialMedia);
+  const [frames, setFrames] = useState<Frame[]>([]);
+  const [logos, setLogos] = useState<Logo[]>([]);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Master modal
+  const [masterOpen, setMasterOpen] = useState(false);
+  const [editingMasterId, setEditingMasterId] = useState<string | null>(null);
+  const [masterForm, setMasterForm] = useState<Omit<MediaMaster, "id">>(blankMaster());
+
+  // Asset modal
+  const [assetModal, setAssetModal] = useState<{
+    open: boolean;
+    kind: "frame" | "logo";
+    mediaId: string;
+    initial: AssetFormValue | null;
+  }>({ open: false, kind: "frame", mediaId: "", initial: null });
+
+  const toggleExpand = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const handleSave = () => {
-    if (!form.name) {
+  const openCreateMaster = () => {
+    setMasterForm(blankMaster());
+    setEditingMasterId(null);
+    setMasterOpen(true);
+  };
+
+  const openEditMaster = (m: MediaMaster) => {
+    const { id, ...rest } = m;
+    setMasterForm(rest);
+    setEditingMasterId(id);
+    setMasterOpen(true);
+  };
+
+  const saveMaster = () => {
+    if (!masterForm.name.trim()) {
       toast.error("媒体名を入力してください");
       return;
     }
-    if (editingId) {
-      setMedia((prev) => prev.map((m) => (m.id === editingId ? { id: editingId, ...form } : m)));
+    if (editingMasterId) {
+      setMedia((p) => p.map((m) => (m.id === editingMasterId ? { id: editingMasterId, ...masterForm } : m)));
       toast.success("媒体を更新しました");
     } else {
-      setMedia((prev) => [...prev, { id: String(Date.now()), ...form }]);
+      setMedia((p) => [...p, { id: uid(), ...masterForm }]);
       toast.success("媒体を追加しました");
     }
-    setForm(blankForm());
-    setEditingId(null);
-    setOpen(false);
+    setMasterOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    setMedia((prev) => prev.filter((m) => m.id !== id));
+  const deleteMaster = (id: string) => {
+    setMedia((p) => p.filter((m) => m.id !== id));
+    setFrames((p) => p.filter((f) => f.mediaMasterId !== id));
+    setLogos((p) => p.filter((l) => l.mediaMasterId !== id));
     toast.success("媒体を削除しました");
   };
 
-  const openCreate = () => {
-    setForm(blankForm());
-    setEditingId(null);
-    setOpen(true);
+  const openAddAsset = (mediaId: string, kind: "frame" | "logo") => {
+    setAssetModal({ open: true, kind, mediaId, initial: null });
   };
 
-  const openEdit = (m: Media) => {
-    const { id, ...rest } = m;
-    setForm(rest);
-    setEditingId(id);
-    setOpen(true);
+  const openEditAsset = (mediaId: string, kind: "frame" | "logo", asset: Frame | Logo) => {
+    setAssetModal({
+      open: true,
+      kind,
+      mediaId,
+      initial: {
+        id: asset.id,
+        name: asset.name,
+        imageUrl: asset.imageUrl,
+        position: asset.position,
+        isDefault: asset.isDefault,
+      },
+    });
+  };
+
+  const saveAsset = (value: AssetFormValue) => {
+    const { kind, mediaId, initial } = assetModal;
+    const setter = kind === "frame" ? setFrames : setLogos;
+    setter((prev: any) => {
+      let next = [...prev];
+      // If marked default, clear others for same master
+      if (value.isDefault) {
+        next = next.map((a) => (a.mediaMasterId === mediaId ? { ...a, isDefault: false } : a));
+      }
+      if (initial?.id) {
+        next = next.map((a) =>
+          a.id === initial.id
+            ? { ...a, name: value.name, imageUrl: value.imageUrl, position: value.position, isDefault: value.isDefault }
+            : a,
+        );
+      } else {
+        next.push({
+          id: uid(),
+          mediaMasterId: mediaId,
+          name: value.name,
+          imageUrl: value.imageUrl,
+          position: value.position,
+          isDefault: value.isDefault,
+        });
+      }
+      return next;
+    });
+    toast.success(initial?.id ? "更新しました" : "追加しました");
+  };
+
+  const deleteAsset = (kind: "frame" | "logo", id: string) => {
+    const setter = kind === "frame" ? setFrames : setLogos;
+    setter((prev: any) => prev.filter((a: any) => a.id !== id));
+    toast.success("削除しました");
+  };
+
+  const setDefaultAsset = (kind: "frame" | "logo", mediaId: string, id: string) => {
+    const setter = kind === "frame" ? setFrames : setLogos;
+    setter((prev: any) =>
+      prev.map((a: any) =>
+        a.mediaMasterId === mediaId ? { ...a, isDefault: a.id === id } : a,
+      ),
+    );
+  };
+
+  const setNoLogo = (mediaId: string, value: boolean) => {
+    setMedia((p) => p.map((m) => (m.id === mediaId ? { ...m, noLogo: value } : m)));
   };
 
   return (
@@ -173,7 +228,7 @@ const AdminMedia = () => {
         title="媒体マスター管理"
         description="広告媒体の登録・編集を行います"
         actions={
-          <Button onClick={openCreate}>
+          <Button onClick={openCreateMaster}>
             <Plus /> 媒体を追加
           </Button>
         }
@@ -183,285 +238,276 @@ const AdminMedia = () => {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="w-10" />
                 <TableHead>媒体名</TableHead>
-                <TableHead>フレーム画像</TableHead>
+                <TableHead>フレーム</TableHead>
+                <TableHead>ロゴ</TableHead>
                 <TableHead>デフォルトトランジション</TableHead>
                 <TableHead>表示秒数</TableHead>
                 <TableHead className="text-right">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {media.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell className="font-medium">{m.name}</TableCell>
-                  <TableCell>
-                    {m.frameImage ? (
-                      <img
-                        src={m.frameImage}
-                        alt={`${m.name} frame`}
-                        className="h-12 w-12 rounded border border-border object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground">
-                        なし
-                      </div>
+              {media.map((m) => {
+                const isOpen = expanded.has(m.id);
+                const mediaFrames = frames.filter((f) => f.mediaMasterId === m.id);
+                const mediaLogos = logos.filter((l) => l.mediaMasterId === m.id);
+                return (
+                  <>
+                    <TableRow key={m.id} className="cursor-pointer" onClick={() => toggleExpand(m.id)}>
+                      <TableCell>
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{m.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{mediaFrames.length}件</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {m.noLogo ? "なし" : `${mediaLogos.length}件`}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{transitionLabels[m.transition]}</TableCell>
+                      <TableCell className="text-muted-foreground">{m.displaySec}秒</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" onClick={() => openEditMaster(m)}>
+                          <Pencil />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteMaster(m.id)}>
+                          <Trash2 />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                    {isOpen && (
+                      <TableRow key={`${m.id}-exp`} className="hover:bg-transparent">
+                        <TableCell colSpan={7} className="bg-muted/20 p-6">
+                          <div className="grid grid-cols-2 gap-8">
+                            {/* Frames */}
+                            <AssetSection
+                              title="フレーム一覧"
+                              kind="frame"
+                              assets={mediaFrames}
+                              onAdd={() => openAddAsset(m.id, "frame")}
+                              onEdit={(a) => openEditAsset(m.id, "frame", a)}
+                              onDelete={(id) => deleteAsset("frame", id)}
+                              onSetDefault={(id) => setDefaultAsset("frame", m.id, id)}
+                            />
+                            {/* Logos */}
+                            <div className="space-y-4">
+                              <AssetSection
+                                title="ロゴ一覧"
+                                kind="logo"
+                                assets={mediaLogos}
+                                disabled={m.noLogo}
+                                onAdd={() => openAddAsset(m.id, "logo")}
+                                onEdit={(a) => openEditAsset(m.id, "logo", a)}
+                                onDelete={(id) => deleteAsset("logo", id)}
+                                onSetDefault={(id) => setDefaultAsset("logo", m.id, id)}
+                              />
+                              <div className="flex items-center gap-2 pl-1">
+                                <Checkbox
+                                  id={`nologo-${m.id}`}
+                                  checked={m.noLogo}
+                                  onCheckedChange={(v) => setNoLogo(m.id, !!v)}
+                                />
+                                <Label htmlFor={`nologo-${m.id}`} className="cursor-pointer text-sm">
+                                  ロゴなし（この媒体ではロゴを使用しない）
+                                </Label>
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {transitionLabels[m.transition]}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{m.displaySec}秒</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(m)}>
-                      <Pencil />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)}>
-                      <Trash2 />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                  </>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
-          <div className="grid grid-cols-[60%_40%] max-h-[90vh]">
-            {/* LEFT: Form */}
-            <div className="overflow-y-auto p-6 border-r border-border">
-              <DialogHeader className="mb-4">
-                <DialogTitle>{editingId ? "媒体を編集" : "媒体を追加"}</DialogTitle>
-                <DialogDescription>
-                  {editingId ? "既存の媒体設定を更新します。" : "新しい広告媒体を登録します。"}
-                </DialogDescription>
-              </DialogHeader>
+      {/* Media master modal (simplified) */}
+      <Dialog open={masterOpen} onOpenChange={setMasterOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingMasterId ? "媒体を編集" : "媒体を追加"}</DialogTitle>
+            <DialogDescription>
+              基本情報のみ登録します。フレーム・ロゴは作成後に追加できます。
+            </DialogDescription>
+          </DialogHeader>
 
-              <div className="space-y-6">
-                {/* 基本情報 */}
-                <section className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">基本情報</h3>
-                  <div className="space-y-2">
-                    <Label>
-                      媒体名 <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="例：LINEマンガ"
-                    />
-                  </div>
-                </section>
-
-                <Separator />
-
-                {/* 画像設定 */}
-                <section className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">画像設定</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <UploadArea
-                      label="フレーム画像をアップロード"
-                      preview={form.frameImage}
-                      onClick={() => frameInputRef.current?.click()}
-                    />
-                    <input
-                      ref={frameInputRef}
-                      type="file"
-                      accept="image/png,image/*"
-                      className="hidden"
-                      onChange={(e) => handleFile(e.target.files?.[0], "frameImage")}
-                    />
-
-                    <UploadArea
-                      label="ロゴ画像をアップロード"
-                      preview={form.logoImage}
-                      onClick={() => logoInputRef.current?.click()}
-                    />
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/png,image/*"
-                      className="hidden"
-                      onChange={(e) => handleFile(e.target.files?.[0], "logoImage")}
-                    />
-                  </div>
-                </section>
-
-                <Separator />
-
-                {/* 位置設定 */}
-                <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground">フレーム・ロゴの位置設定</h3>
-
-                  <PositionFields
-                    label="フレーム位置・サイズ"
-                    value={form.framePos}
-                    onChange={(v) => setForm({ ...form, framePos: v })}
-                  />
-                  <div className="flex items-center justify-between">
-                    <Label>フレーム表示</Label>
-                    <Switch
-                      checked={form.frameVisible}
-                      onCheckedChange={(v) => setForm({ ...form, frameVisible: v })}
-                    />
-                  </div>
-
-                  <PositionFields
-                    label="ロゴ位置・サイズ"
-                    value={form.logoPos}
-                    onChange={(v) => setForm({ ...form, logoPos: v })}
-                  />
-                  <div className="flex items-center justify-between">
-                    <Label>ロゴ表示</Label>
-                    <Switch
-                      checked={form.logoVisible}
-                      onCheckedChange={(v) => setForm({ ...form, logoVisible: v })}
-                    />
-                  </div>
-                </section>
-
-                <Separator />
-
-                {/* デフォルト設定 */}
-                <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground">デフォルト設定</h3>
-
-                  <div className="space-y-2">
-                    <Label>デフォルトトランジション</Label>
-                    <Select
-                      value={form.transition}
-                      onValueChange={(v: Transition) => setForm({ ...form, transition: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(transitionLabels) as Transition[]).map((k) => (
-                          <SelectItem key={k} value={k}>
-                            {transitionLabels[k]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">
-                      右側プレビューの「トランジション再生」で動作確認できます
-                    </p>
-                  </div>
-
-                  <PresetField
-                    label="デフォルト切り替え秒数"
-                    presets={switchPresets}
-                    value={form.switchSec}
-                    onChange={(v) => setForm({ ...form, switchSec: v })}
-                  />
-
-                  <PresetField
-                    label="デフォルト表示秒数"
-                    presets={displayPresets}
-                    value={form.displaySec}
-                    onChange={(v) => setForm({ ...form, displaySec: v })}
-                  />
-                </section>
-
-                <Separator />
-
-                {/* リサイズ設定 */}
-                <section className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">リサイズ設定</h3>
-                  <div className="space-y-2">
-                    <Label>デフォルト背景色</Label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={form.bgColor}
-                        onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
-                        className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
-                      />
-                      <Input
-                        value={form.bgColor}
-                        onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
-                        className="w-32 font-mono"
-                      />
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <DialogFooter className="mt-6">
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  キャンセル
-                </Button>
-                <Button onClick={handleSave}>{editingId ? "更新" : "保存"}</Button>
-              </DialogFooter>
-            </div>
-
-            {/* RIGHT: Preview */}
-            <div className="overflow-y-auto bg-muted/20 p-6">
-              <MediaPreview
-                frameImage={form.frameImage}
-                logoImage={form.logoImage}
-                framePos={form.framePos}
-                logoPos={form.logoPos}
-                frameVisible={form.frameVisible}
-                logoVisible={form.logoVisible}
-                bgColor={form.bgColor}
-                transition={form.transition}
-                onFramePosChange={(v) => setForm((p) => ({ ...p, framePos: v }))}
-                onLogoPosChange={(v) => setForm((p) => ({ ...p, logoPos: v }))}
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>
+                媒体名 <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                value={masterForm.name}
+                onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
+                placeholder="例：LINEマンガ"
               />
             </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>デフォルトトランジション</Label>
+                <TransitionDemo transition={masterForm.transition} compact />
+              </div>
+              <Select
+                value={masterForm.transition}
+                onValueChange={(v: Transition) => setMasterForm({ ...masterForm, transition: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(transitionLabels) as Transition[]).map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {transitionLabels[k]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <TransitionDemo transition={masterForm.transition} />
+            </div>
+
+            <PresetField
+              label="デフォルト切り替え秒数"
+              presets={switchPresets}
+              value={masterForm.switchSec}
+              onChange={(v) => setMasterForm({ ...masterForm, switchSec: v })}
+            />
+
+            <PresetField
+              label="デフォルト表示秒数"
+              presets={displayPresets}
+              value={masterForm.displaySec}
+              onChange={(v) => setMasterForm({ ...masterForm, displaySec: v })}
+            />
+
+            <div className="space-y-2">
+              <Label>デフォルト背景色</Label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={masterForm.bgColor}
+                  onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
+                  className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
+                />
+                <Input
+                  value={masterForm.bgColor}
+                  onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
+                  className="w-32 font-mono"
+                />
+              </div>
+            </div>
           </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setMasterOpen(false)}>
+              キャンセル
+            </Button>
+            <Button onClick={saveMaster}>{editingMasterId ? "更新" : "保存"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Asset modal */}
+      <AssetFormModal
+        open={assetModal.open}
+        onOpenChange={(v) => setAssetModal((p) => ({ ...p, open: v }))}
+        kind={assetModal.kind}
+        initial={assetModal.initial}
+        onSave={saveAsset}
+      />
     </>
   );
 };
 
-interface UploadAreaProps {
-  label: string;
-  preview: string | null;
-  onClick: () => void;
+interface AssetSectionProps {
+  title: string;
+  kind: "frame" | "logo";
+  assets: (Frame | Logo)[];
+  disabled?: boolean;
+  onAdd: () => void;
+  onEdit: (a: Frame | Logo) => void;
+  onDelete: (id: string) => void;
+  onSetDefault: (id: string) => void;
 }
 
-const UploadArea = ({ label, preview, onClick }: UploadAreaProps) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 p-4 text-center transition-colors hover:bg-muted/40 min-h-[140px]"
-  >
-    {preview ? (
-      <img src={preview} alt={label} className="max-h-24 rounded object-contain" />
-    ) : (
-      <Upload className="h-6 w-6 text-muted-foreground" />
-    )}
-    <span className="text-xs text-muted-foreground">{label}</span>
-  </button>
-);
-
-interface PositionFieldsProps {
-  label: string;
-  value: Box;
-  onChange: (v: Box) => void;
-}
-
-const PositionFields = ({ label, value, onChange }: PositionFieldsProps) => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    <div className="grid grid-cols-4 gap-2">
-      {(["x", "y", "w", "h"] as const).map((k) => (
-        <div key={k} className="space-y-1">
-          <span className="text-xs text-muted-foreground">
-            {k === "w" ? "幅" : k === "h" ? "高さ" : k.toUpperCase()} (px)
-          </span>
-          <Input
-            type="number"
-            value={value[k]}
-            onChange={(e) => onChange({ ...value, [k]: Number(e.target.value) })}
-          />
-        </div>
-      ))}
+const AssetSection = ({
+  title,
+  kind,
+  assets,
+  disabled,
+  onAdd,
+  onEdit,
+  onDelete,
+  onSetDefault,
+}: AssetSectionProps) => (
+  <div className={`space-y-3 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+    <div className="flex items-center justify-between">
+      <h4 className="text-sm font-semibold">{title}</h4>
+      <Button size="sm" variant="outline" onClick={onAdd}>
+        <Plus className="h-3 w-3" />
+        {kind === "frame" ? "フレームを追加" : "ロゴを追加"}
+      </Button>
     </div>
+    {assets.length === 0 ? (
+      <div className="rounded-md border border-dashed border-border bg-background py-6 text-center text-xs text-muted-foreground">
+        まだ登録されていません
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 gap-3">
+        {assets.map((a) => (
+          <div
+            key={a.id}
+            className="rounded-md border border-border bg-background p-3 space-y-2"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                {a.imageUrl ? (
+                  <img
+                    src={a.imageUrl}
+                    alt={a.name}
+                    className="h-10 w-10 rounded border border-border object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded border border-dashed border-border flex-shrink-0" />
+                )}
+                <div className="min-w-0">
+                  <div className="text-sm font-medium truncate">{a.name}</div>
+                  {a.isDefault && (
+                    <Badge className="mt-0.5" variant="secondary">
+                      デフォルト
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-1">
+              {!a.isDefault && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="デフォルトに設定"
+                  onClick={() => onSetDefault(a.id)}
+                >
+                  <Star className="h-4 w-4" />
+                </Button>
+              )}
+              <Button size="icon" variant="ghost" onClick={() => onEdit(a)}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => onDelete(a.id)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
   </div>
 );
 
