@@ -582,18 +582,12 @@ const CreateFrames = () => {
                           </div>
                         )}
 
-                        {/* ③ Frame asset */}
+                        {/* ③ Frame asset (full canvas, object-cover) */}
                         {showFrame && defaultFrameAsset?.imageUrl && (
                           <img
                             src={defaultFrameAsset.imageUrl}
                             alt="default frame"
-                            className="absolute pointer-events-none object-contain"
-                            style={{
-                              left: defaultFrameAsset.position.x,
-                              top: defaultFrameAsset.position.y,
-                              width: defaultFrameAsset.position.w,
-                              height: defaultFrameAsset.position.h,
-                            }}
+                            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                           />
                         )}
 
