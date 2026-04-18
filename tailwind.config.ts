@@ -72,23 +72,13 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(315 100% 60% / 0.4), 0 0 40px hsl(270 100% 65% / 0.2)" },
-          "50%": { boxShadow: "0 0 35px hsl(315 100% 60% / 0.7), 0 0 70px hsl(270 100% 65% / 0.4)" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-12px)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 3s ease-in-out infinite",
-        float: "float 6s ease-in-out infinite",
       },
       fontFamily: {
-        display: ["Orbitron", "Inter", "sans-serif"],
+        sans: ["Noto Sans JP", "Inter", "system-ui", "sans-serif"],
       },
     },
   },
