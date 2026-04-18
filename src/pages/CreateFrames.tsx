@@ -117,6 +117,23 @@ const CreateFrames = () => {
   const [uploadDone, setUploadDone] = useState(0);
   const [completedCount, setCompletedCount] = useState<number | null>(null);
 
+  // Preview area measurement (to fit canvas)
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+  const [previewAreaWidth, setPreviewAreaWidth] = useState(420);
+  const [previewAreaHeight, setPreviewAreaHeight] = useState(640);
+  useEffect(() => {
+    const el = previewAreaRef.current;
+    if (!el) return;
+    const compute = () => {
+      setPreviewAreaWidth(el.clientWidth);
+      setPreviewAreaHeight(el.clientHeight);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Text settings shortcuts from context
   const {
     visible: textVisible,
