@@ -100,7 +100,10 @@ const CreateFrames = () => {
   const [showFrame, setShowFrame] = useState(true);
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(12);
-  type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
+  type CopyrightPos =
+    | "top-left" | "top-center" | "top-right"
+    | "middle-left" | "middle-center" | "middle-right"
+    | "bottom-left" | "bottom-center" | "bottom-right";
   // Inner comic area is 1080 x 1350 px (canvas coords)
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
@@ -123,9 +126,11 @@ const CreateFrames = () => {
   const applyPreset = (p: CopyrightPos) => {
     const { w, h } = copyrightSizeRef.current;
     let x = PRESET_PADDING;
+    if (p.endsWith("-center")) x = Math.max(0, (CANVAS_W - w) / 2);
+    else if (p.endsWith("-right")) x = Math.max(0, CANVAS_W - w - PRESET_PADDING);
     let y = PRESET_PADDING;
-    if (p === "bottom-left" || p === "bottom-right") y = Math.max(0, CANVAS_H - h - PRESET_PADDING);
-    if (p === "top-right" || p === "bottom-right") x = Math.max(0, CANVAS_W - w - PRESET_PADDING);
+    if (p.startsWith("middle-")) y = Math.max(0, (CANVAS_H - h) / 2);
+    else if (p.startsWith("bottom-")) y = Math.max(0, CANVAS_H - h - PRESET_PADDING);
     return { x, y };
   };
 
