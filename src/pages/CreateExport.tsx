@@ -204,6 +204,19 @@ const CreateExport = () => {
     setSelectedBgmId(id);
   };
 
+  const handleRandomSelect = (categoryId: string) => {
+    const category = BGM_CATEGORIES.find((c) => c.id === categoryId);
+    if (!category || category.tracks.length === 0) {
+      toast.error("このジャンルには曲がありません");
+      return;
+    }
+    const candidates = category.tracks.filter((t) => t.id !== selectedBgmId);
+    const pool = candidates.length > 0 ? candidates : category.tracks;
+    const randomTrack = pool[Math.floor(Math.random() * pool.length)];
+    setSelectedBgmId(randomTrack.id);
+    toast.success(`ランダム選択: ${randomTrack.name}`);
+  };
+
   const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
