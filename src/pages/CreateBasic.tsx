@@ -12,21 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateFlow } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
-
-const mediaOptions = [
-  "ピッコマ",
-  "コミックシーモア",
-  "MangaPlaza",
-  "ヤンジャン＋",
-  "Palcy",
-  "コミックDAYS",
-  "EbookRenta!",
-  "サンデーうぇぶり",
-  "まんが王国",
-  "マンガPark",
-];
 
 const CreateBasic = () => {
   const navigate = useNavigate();
