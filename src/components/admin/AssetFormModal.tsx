@@ -142,30 +142,9 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
 
               <div className="space-y-2">
                 <Label>画像</Label>
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/20 p-4 text-center transition-colors hover:bg-muted/40 min-h-[140px]"
-                >
-                  {form.imageUrl ? (
-                    <img
-                      src={form.imageUrl}
-                      alt={form.name}
-                      className="max-h-24 rounded object-contain"
-                    />
-                  ) : (
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {title}画像をアップロード
-                  </span>
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0])}
+                <ImageDropzone
+                  value={form.imageUrl}
+                  onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
                 />
               </div>
 
