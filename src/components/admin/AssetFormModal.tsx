@@ -445,17 +445,15 @@ const AssetFormModal = ({
               </div>
             )}
 
-            <div className="flex flex-1 justify-center overflow-hidden min-h-0">
+            <div ref={canvasWrapRef} className="flex flex-1 justify-center items-start overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
                 className="relative overflow-hidden rounded-lg"
                 style={{
-                  aspectRatio: `${canvasW} / ${canvasH}`,
-                  height: "100%",
-                  maxWidth: "100%",
+                  width: displaySize.w || "100%",
+                  height: displaySize.h || "auto",
                   border: "1px solid #e0e0e0",
                   backgroundColor: "#f0f0f0",
-                  alignSelf: "flex-start",
                 }}
               >
                 <div
@@ -467,7 +465,7 @@ const AssetFormModal = ({
                     transform: `scale(${scale})`,
                   }}
                 >
-                  {/* Selected frame as background (logos only) */}
+                  {/* Selected frame as background (logos only) — cover the whole canvas */}
                   {kind === "logo" && selectedFrame?.imageUrl && (
                     <img
                       src={selectedFrame.imageUrl}
@@ -477,7 +475,7 @@ const AssetFormModal = ({
                       style={{
                         width: canvasW,
                         height: canvasH,
-                        objectFit: "contain",
+                        objectFit: "cover",
                       }}
                     />
                   )}
