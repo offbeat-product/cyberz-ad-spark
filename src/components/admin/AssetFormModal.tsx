@@ -180,6 +180,19 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
     });
   };
 
+  const MAX_W = 1080;
+  const MAX_H = 1920;
+  const fieldRange = (k: keyof Box): { min: number; max: number } => {
+    if (k === "w") return { min: 1, max: MAX_W };
+    if (k === "h") return { min: 1, max: MAX_H };
+    return { min: -10000, max: 10000 };
+  };
+  const isFieldInvalid = (k: keyof Box) => {
+    const { min, max } = fieldRange(k);
+    const v = form.position[k];
+    return !Number.isFinite(v) || v < min || v > max;
+  };
+
   const submit = () => {
     if (!form.name.trim()) {
       toast.error("名前を入力してください");
@@ -187,6 +200,14 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
     }
     if (!form.imageUrl) {
       toast.error("画像をアップロードしてください");
+      return;
+    }
+    if (form.position.w < 1 || form.position.w > MAX_W) {
+      toast.error(`幅は1〜${MAX_W}pxの範囲で入力してください`);
+      return;
+    }
+    if (form.position.h < 1 || form.position.h > MAX_H) {
+      toast.error(`高さは1〜${MAX_H}pxの範囲で入力してください`);
       return;
     }
     onSave(form);
