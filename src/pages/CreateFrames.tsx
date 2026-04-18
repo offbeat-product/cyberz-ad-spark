@@ -574,7 +574,16 @@ const CreateFrames = () => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs">テキスト</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">テキスト</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">テキストを表示</span>
+                  <Switch
+                    checked={textVisible}
+                    onCheckedChange={(v) => patchText({ visible: v })}
+                  />
+                </div>
+              </div>
               <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
             </div>
 
