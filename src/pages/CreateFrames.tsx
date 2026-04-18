@@ -860,9 +860,9 @@ const CreateFrames = () => {
                               key={p.id}
                               type="button"
                               onClick={() => {
-                                pushHistory(copyrightCoord);
+                                pushHistory();
                                 setCopyrightPos(p.id);
-                                setCopyrightCoordState(applyPreset(p.id));
+                                setCopyrightOffset({ x: 0, y: 0 });
                               }}
                               className={cn(
                                 "aspect-square rounded border text-[10px] transition-colors",
@@ -877,40 +877,50 @@ const CreateFrames = () => {
                         })}
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">座標(px)</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">X (0〜{CANVAS_W})</Label>
+                          <Label className="text-[10px] text-muted-foreground">X (px)</Label>
                           <Input
                             type="number"
-                            min={0}
-                            max={CANVAS_W}
-                            value={Math.round(copyrightCoord.x)}
+                            min={-500}
+                            max={500}
+                            value={Math.round(copyrightOffset.x)}
                             onChange={(e) => {
                               const nx = Number(e.target.value);
                               if (Number.isNaN(nx)) return;
-                              pushHistory(copyrightCoord);
-                              setCopyrightCoordState(clampCoord(nx, copyrightCoord.y));
+                              pushHistory();
+                              setCopyrightOffset((prev) => ({ ...prev, x: nx }));
                             }}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Y (0〜{CANVAS_H})</Label>
+                          <Label className="text-[10px] text-muted-foreground">Y (px)</Label>
                           <Input
                             type="number"
-                            min={0}
-                            max={CANVAS_H}
-                            value={Math.round(copyrightCoord.y)}
+                            min={-500}
+                            max={500}
+                            value={Math.round(copyrightOffset.y)}
                             onChange={(e) => {
                               const ny = Number(e.target.value);
                               if (Number.isNaN(ny)) return;
-                              pushHistory(copyrightCoord);
-                              setCopyrightCoordState(clampCoord(copyrightCoord.x, ny));
+                              pushHistory();
+                              setCopyrightOffset((prev) => ({ ...prev, y: ny }));
                             }}
                           />
                         </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          pushHistory();
+                          setCopyrightOffset({ x: 0, y: 0 });
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-primary underline"
+                      >
+                        オフセットをリセット
+                      </button>
                     </div>
                   </>
                 )}
