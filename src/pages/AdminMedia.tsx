@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Pencil, Plus, Trash2, Upload } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,8 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-type Transition = "none" | "slide-lr" | "slide-tb" | "fade" | "zoom-in";
+import MediaPreview, { Box, Transition } from "@/components/admin/MediaPreview";
 
 const transitionLabels: Record<Transition, string> = {
   none: "なし",
@@ -49,8 +48,8 @@ interface Media {
   name: string;
   frameImage: string | null;
   logoImage: string | null;
-  framePos: { x: number; y: number; w: number; h: number };
-  logoPos: { x: number; y: number; w: number; h: number };
+  framePos: Box;
+  logoPos: Box;
   frameVisible: boolean;
   logoVisible: boolean;
   transition: Transition;
@@ -121,6 +120,7 @@ const blankForm = (): Omit<Media, "id"> => ({
 const AdminMedia = () => {
   const [media, setMedia] = useState<Media[]>(initial);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Media, "id">>(blankForm());
   const frameInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -132,15 +132,21 @@ const AdminMedia = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleAdd = () => {
+  const handleSave = () => {
     if (!form.name) {
       toast.error("媒体名を入力してください");
       return;
     }
-    setMedia((prev) => [...prev, { id: String(Date.now()), ...form }]);
+    if (editingId) {
+      setMedia((prev) => prev.map((m) => (m.id === editingId ? { id: editingId, ...form } : m)));
+      toast.success("媒体を更新しました");
+    } else {
+      setMedia((prev) => [...prev, { id: String(Date.now()), ...form }]);
+      toast.success("媒体を追加しました");
+    }
     setForm(blankForm());
+    setEditingId(null);
     setOpen(false);
-    toast.success("媒体を追加しました");
   };
 
   const handleDelete = (id: string) => {
@@ -148,8 +154,16 @@ const AdminMedia = () => {
     toast.success("媒体を削除しました");
   };
 
-  const openModal = () => {
+  const openCreate = () => {
     setForm(blankForm());
+    setEditingId(null);
+    setOpen(true);
+  };
+
+  const openEdit = (m: Media) => {
+    const { id, ...rest } = m;
+    setForm(rest);
+    setEditingId(id);
     setOpen(true);
   };
 
@@ -159,7 +173,7 @@ const AdminMedia = () => {
         title="媒体マスター管理"
         description="広告媒体の登録・編集を行います"
         actions={
-          <Button onClick={openModal}>
+          <Button onClick={openCreate}>
             <Plus /> 媒体を追加
           </Button>
         }
@@ -198,6 +212,9 @@ const AdminMedia = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{m.displaySec}秒</TableCell>
                   <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(m)}>
+                      <Pencil />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => handleDelete(m.id)}>
                       <Trash2 />
                     </Button>
@@ -210,165 +227,191 @@ const AdminMedia = () => {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>媒体を追加</DialogTitle>
-            <DialogDescription>新しい広告媒体を登録します。</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
+          <div className="grid grid-cols-[60%_40%] max-h-[90vh]">
+            {/* LEFT: Form */}
+            <div className="overflow-y-auto p-6 border-r border-border">
+              <DialogHeader className="mb-4">
+                <DialogTitle>{editingId ? "媒体を編集" : "媒体を追加"}</DialogTitle>
+                <DialogDescription>
+                  {editingId ? "既存の媒体設定を更新します。" : "新しい広告媒体を登録します。"}
+                </DialogDescription>
+              </DialogHeader>
 
-          <div className="space-y-6">
-            {/* 基本情報 */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">基本情報</h3>
-              <div className="space-y-2">
-                <Label>
-                  媒体名 <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="例：LINEマンガ"
-                />
-              </div>
-            </section>
+              <div className="space-y-6">
+                {/* 基本情報 */}
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">基本情報</h3>
+                  <div className="space-y-2">
+                    <Label>
+                      媒体名 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="例：LINEマンガ"
+                    />
+                  </div>
+                </section>
 
-            <Separator />
+                <Separator />
 
-            {/* 画像設定 */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">画像設定</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <UploadArea
-                  label="フレーム画像をアップロード"
-                  preview={form.frameImage}
-                  onClick={() => frameInputRef.current?.click()}
-                />
-                <input
-                  ref={frameInputRef}
-                  type="file"
-                  accept="image/png,image/*"
-                  className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0], "frameImage")}
-                />
+                {/* 画像設定 */}
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">画像設定</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <UploadArea
+                      label="フレーム画像をアップロード"
+                      preview={form.frameImage}
+                      onClick={() => frameInputRef.current?.click()}
+                    />
+                    <input
+                      ref={frameInputRef}
+                      type="file"
+                      accept="image/png,image/*"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files?.[0], "frameImage")}
+                    />
 
-                <UploadArea
-                  label="ロゴ画像をアップロード"
-                  preview={form.logoImage}
-                  onClick={() => logoInputRef.current?.click()}
-                />
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/png,image/*"
-                  className="hidden"
-                  onChange={(e) => handleFile(e.target.files?.[0], "logoImage")}
-                />
-              </div>
-            </section>
+                    <UploadArea
+                      label="ロゴ画像をアップロード"
+                      preview={form.logoImage}
+                      onClick={() => logoInputRef.current?.click()}
+                    />
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/*"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files?.[0], "logoImage")}
+                    />
+                  </div>
+                </section>
 
-            <Separator />
+                <Separator />
 
-            {/* 位置設定 */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">フレーム・ロゴの位置設定</h3>
+                {/* 位置設定 */}
+                <section className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground">フレーム・ロゴの位置設定</h3>
 
-              <PositionFields
-                label="フレーム位置・サイズ"
-                value={form.framePos}
-                onChange={(v) => setForm({ ...form, framePos: v })}
-              />
-              <div className="flex items-center justify-between">
-                <Label>フレーム表示</Label>
-                <Switch
-                  checked={form.frameVisible}
-                  onCheckedChange={(v) => setForm({ ...form, frameVisible: v })}
-                />
-              </div>
-
-              <PositionFields
-                label="ロゴ位置・サイズ"
-                value={form.logoPos}
-                onChange={(v) => setForm({ ...form, logoPos: v })}
-              />
-              <div className="flex items-center justify-between">
-                <Label>ロゴ表示</Label>
-                <Switch
-                  checked={form.logoVisible}
-                  onCheckedChange={(v) => setForm({ ...form, logoVisible: v })}
-                />
-              </div>
-            </section>
-
-            <Separator />
-
-            {/* デフォルト設定 */}
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-foreground">デフォルト設定</h3>
-
-              <div className="space-y-2">
-                <Label>デフォルトトランジション</Label>
-                <Select
-                  value={form.transition}
-                  onValueChange={(v: Transition) => setForm({ ...form, transition: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(transitionLabels) as Transition[]).map((k) => (
-                      <SelectItem key={k} value={k}>
-                        {transitionLabels[k]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <PresetField
-                label="デフォルト切り替え秒数"
-                presets={switchPresets}
-                value={form.switchSec}
-                onChange={(v) => setForm({ ...form, switchSec: v })}
-              />
-
-              <PresetField
-                label="デフォルト表示秒数"
-                presets={displayPresets}
-                value={form.displaySec}
-                onChange={(v) => setForm({ ...form, displaySec: v })}
-              />
-            </section>
-
-            <Separator />
-
-            {/* リサイズ設定 */}
-            <section className="space-y-3">
-              <h3 className="text-sm font-semibold text-foreground">リサイズ設定</h3>
-              <div className="space-y-2">
-                <Label>デフォルト背景色</Label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={form.bgColor}
-                    onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
-                    className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
+                  <PositionFields
+                    label="フレーム位置・サイズ"
+                    value={form.framePos}
+                    onChange={(v) => setForm({ ...form, framePos: v })}
                   />
-                  <Input
-                    value={form.bgColor}
-                    onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
-                    className="w-32 font-mono"
+                  <div className="flex items-center justify-between">
+                    <Label>フレーム表示</Label>
+                    <Switch
+                      checked={form.frameVisible}
+                      onCheckedChange={(v) => setForm({ ...form, frameVisible: v })}
+                    />
+                  </div>
+
+                  <PositionFields
+                    label="ロゴ位置・サイズ"
+                    value={form.logoPos}
+                    onChange={(v) => setForm({ ...form, logoPos: v })}
                   />
-                </div>
+                  <div className="flex items-center justify-between">
+                    <Label>ロゴ表示</Label>
+                    <Switch
+                      checked={form.logoVisible}
+                      onCheckedChange={(v) => setForm({ ...form, logoVisible: v })}
+                    />
+                  </div>
+                </section>
+
+                <Separator />
+
+                {/* デフォルト設定 */}
+                <section className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground">デフォルト設定</h3>
+
+                  <div className="space-y-2">
+                    <Label>デフォルトトランジション</Label>
+                    <Select
+                      value={form.transition}
+                      onValueChange={(v: Transition) => setForm({ ...form, transition: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(transitionLabels) as Transition[]).map((k) => (
+                          <SelectItem key={k} value={k}>
+                            {transitionLabels[k]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      右側プレビューの「トランジション再生」で動作確認できます
+                    </p>
+                  </div>
+
+                  <PresetField
+                    label="デフォルト切り替え秒数"
+                    presets={switchPresets}
+                    value={form.switchSec}
+                    onChange={(v) => setForm({ ...form, switchSec: v })}
+                  />
+
+                  <PresetField
+                    label="デフォルト表示秒数"
+                    presets={displayPresets}
+                    value={form.displaySec}
+                    onChange={(v) => setForm({ ...form, displaySec: v })}
+                  />
+                </section>
+
+                <Separator />
+
+                {/* リサイズ設定 */}
+                <section className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground">リサイズ設定</h3>
+                  <div className="space-y-2">
+                    <Label>デフォルト背景色</Label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={form.bgColor}
+                        onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
+                        className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
+                      />
+                      <Input
+                        value={form.bgColor}
+                        onChange={(e) => setForm({ ...form, bgColor: e.target.value })}
+                        className="w-32 font-mono"
+                      />
+                    </div>
+                  </div>
+                </section>
               </div>
-            </section>
+
+              <DialogFooter className="mt-6">
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  キャンセル
+                </Button>
+                <Button onClick={handleSave}>{editingId ? "更新" : "保存"}</Button>
+              </DialogFooter>
+            </div>
+
+            {/* RIGHT: Preview */}
+            <div className="overflow-y-auto bg-muted/20 p-6">
+              <MediaPreview
+                frameImage={form.frameImage}
+                logoImage={form.logoImage}
+                framePos={form.framePos}
+                logoPos={form.logoPos}
+                frameVisible={form.frameVisible}
+                logoVisible={form.logoVisible}
+                bgColor={form.bgColor}
+                transition={form.transition}
+                onFramePosChange={(v) => setForm((p) => ({ ...p, framePos: v }))}
+                onLogoPosChange={(v) => setForm((p) => ({ ...p, logoPos: v }))}
+              />
+            </div>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={handleAdd}>保存</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
@@ -398,8 +441,8 @@ const UploadArea = ({ label, preview, onClick }: UploadAreaProps) => (
 
 interface PositionFieldsProps {
   label: string;
-  value: { x: number; y: number; w: number; h: number };
-  onChange: (v: { x: number; y: number; w: number; h: number }) => void;
+  value: Box;
+  onChange: (v: Box) => void;
 }
 
 const PositionFields = ({ label, value, onChange }: PositionFieldsProps) => (
