@@ -301,10 +301,11 @@ const CreateFrames = () => {
         <StepIndicator steps={steps} current={1} />
       </div>
 
-      <div className="flex-1 grid grid-cols-[40%_60%] min-h-0">
-        {/* Left: Bulk upload + Frame list */}
-        <div className="border-r border-border overflow-y-auto p-6 space-y-4 bg-muted/30">
-          {/* Bulk upload zone */}
+      <div className="flex-1 grid grid-cols-[30%_40%_30%] min-h-0">
+        {/* ===== Left column (30%): Bulk upload (sticky top) + Frame list (scroll) ===== */}
+        <div className="border-r border-border min-h-0 flex flex-col bg-muted/30">
+          {/* Sticky upload area */}
+          <div className="p-4 border-b border-border bg-muted/30 space-y-3">
           <div
             onClick={() => bulkInputRef.current?.click()}
             onDragOver={(e) => {
