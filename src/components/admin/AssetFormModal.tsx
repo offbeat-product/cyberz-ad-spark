@@ -255,24 +255,47 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                 <div className="space-y-2">
                   <Label>位置・サイズ</Label>
                   <div className="grid grid-cols-4 gap-2">
-                    {(["x", "y", "w", "h"] as const).map((k) => (
-                      <div key={k} className="space-y-1">
-                        <span className="text-xs text-muted-foreground">
-                          {k === "w" ? "幅" : k === "h" ? "高さ" : k.toUpperCase()} (px)
-                        </span>
-                        <Input
-                          type="number"
-                          value={form.position[k]}
-                          onChange={(e) =>
-                            setForm((p) => ({
-                              ...p,
-                              position: { ...p.position, [k]: Number(e.target.value) },
-                            }))
-                          }
-                          onBlur={(e) => updatePosField(k, Number(e.target.value))}
-                        />
-                      </div>
-                    ))}
+                    {(["x", "y", "w", "h"] as const).map((k) => {
+                      const { min, max } = fieldRange(k);
+                      const invalid = isFieldInvalid(k);
+                      return (
+                        <div key={k} className="space-y-1">
+                          <span className="text-xs text-muted-foreground">
+                            {k === "w" ? "幅" : k === "h" ? "高さ" : k.toUpperCase()} (px)
+                          </span>
+                          <Input
+                            type="number"
+                            min={k === "w" || k === "h" ? min : undefined}
+                            max={k === "w" || k === "h" ? max : undefined}
+                            className={invalid ? "border-destructive focus-visible:ring-destructive" : ""}
+                            value={form.position[k]}
+                            onChange={(e) => {
+                              let v = Number(e.target.value);
+                              if (k === "w" || k === "h") {
+                                if (v > max) v = max;
+                              }
+                              setForm((p) => ({
+                                ...p,
+                                position: { ...p.position, [k]: v },
+                              }));
+                            }}
+                            onBlur={(e) => {
+                              let v = Number(e.target.value);
+                              if (k === "w" || k === "h") {
+                                if (v > max) v = max;
+                                if (v < min) v = min;
+                              }
+                              updatePosField(k, v);
+                            }}
+                          />
+                          {invalid && (
+                            <span className="text-[10px] text-destructive">
+                              {min}〜{max}の範囲
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
