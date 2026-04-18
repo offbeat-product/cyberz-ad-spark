@@ -38,6 +38,8 @@ export interface ExportSettings {
   bgColor: string;
   showFrame: boolean;
   showLogo: boolean;
+  /** Per-format background color override. null/undefined => use media master default */
+  formatBgColors: Record<string, string | null>;
 }
 
 const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
@@ -66,6 +68,7 @@ const defaultExport: ExportSettings = {
   bgColor: "#FFFFFF",
   showFrame: true,
   showLogo: true,
+  formatBgColors: {},
 };
 
 interface CreateFlowContextValue {

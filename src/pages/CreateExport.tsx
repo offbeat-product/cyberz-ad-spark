@@ -46,6 +46,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useCreateFlow } from "@/contexts/CreateFlowContext";
+import { useMediaMasters } from "@/hooks/useMediaMasters";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
@@ -140,12 +141,25 @@ type UploadedBGM = {
 
 const CreateExport = () => {
   const navigate = useNavigate();
-  const { exportSettings, setExportSettings } = useCreateFlow();
-  const { selectedFormats, bgColor, showFrame, showLogo } = exportSettings;
+  const { basic, exportSettings, setExportSettings } = useCreateFlow();
+  const { media } = useMediaMasters();
+  const selectedMaster = media.find((m) => m.id === basic.mediaId);
+  const masterBgColor = selectedMaster?.bgColor ?? "#000000";
+  const { selectedFormats, bgColor, showFrame, showLogo, formatBgColors } = exportSettings;
 
   const setBgColor = (v: string) => setExportSettings((p) => ({ ...p, bgColor: v }));
   const setShowFrame = (v: boolean) => setExportSettings((p) => ({ ...p, showFrame: v }));
   const setShowLogo = (v: boolean) => setExportSettings((p) => ({ ...p, showLogo: v }));
+
+  const setFormatBgColor = (formatId: string, color: string | null) =>
+    setExportSettings((p) => ({
+      ...p,
+      formatBgColors: { ...p.formatBgColors, [formatId]: color },
+    }));
+
+  const resolveBgColor = (formatId: string) => formatBgColors[formatId] ?? masterBgColor;
+  const isOverridden = (formatId: string) =>
+    formatBgColors[formatId] !== null && formatBgColors[formatId] !== undefined;
 
   const toggleFormat = (id: string) => {
     setExportSettings((p) => ({
@@ -545,21 +559,73 @@ const CreateExport = () => {
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="font-semibold mb-4">出力フォーマット</h2>
             <div className="space-y-3">
-              {formats.map((f) => (
-                <label
-                  key={f.id}
-                  className="flex items-center gap-3 rounded-md border border-border p-4 cursor-pointer hover:bg-muted/40"
-                >
-                  <Checkbox
-                    checked={selectedFormats.includes(f.id)}
-                    onCheckedChange={() => toggleFormat(f.id)}
-                  />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{f.label}</div>
-                    <div className="text-xs text-muted-foreground">{f.size}</div>
+              {formats.map((f) => {
+                const checked = selectedFormats.includes(f.id);
+                const supportsBg = f.id !== "main";
+                const overridden = isOverridden(f.id);
+                const currentColor = resolveBgColor(f.id);
+                return (
+                  <div
+                    key={f.id}
+                    className={cn(
+                      "rounded-md border transition-colors",
+                      checked ? "border-primary bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <label className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/40 rounded-md">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleFormat(f.id)}
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{f.label}</div>
+                        <div className="text-xs text-muted-foreground">{f.size}</div>
+                      </div>
+                    </label>
+
+                    {checked && supportsBg && (
+                      <div className="border-t border-border p-4 space-y-2 bg-background/40">
+                        <Label className="text-xs">背景色（リサイズ時の余白に使用）</Label>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input
+                            type="color"
+                            value={currentColor}
+                            onChange={(e) => setFormatBgColor(f.id, e.target.value)}
+                            className="h-9 w-14 cursor-pointer rounded border border-border bg-background p-0"
+                          />
+                          <Input
+                            value={currentColor}
+                            onChange={(e) => setFormatBgColor(f.id, e.target.value)}
+                            className="w-28 font-mono text-xs"
+                          />
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <span>媒体マスター設定：</span>
+                            <span
+                              className="inline-block h-4 w-4 rounded border border-border"
+                              style={{ backgroundColor: masterBgColor }}
+                            />
+                            <span className="font-mono">{masterBgColor}</span>
+                          </div>
+                          {overridden && (
+                            <button
+                              type="button"
+                              onClick={() => setFormatBgColor(f.id, null)}
+                              className="text-xs text-muted-foreground hover:text-primary underline"
+                            >
+                              🔄 デフォルトに戻す
+                            </button>
+                          )}
+                        </div>
+                        {overridden && (
+                          <p className="text-[11px] text-primary">
+                            ※媒体マスターの設定から上書きされています
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </label>
-              ))}
+                );
+              })}
             </div>
           </section>
 
@@ -568,7 +634,7 @@ const CreateExport = () => {
             <h2 className="font-semibold">表示設定</h2>
 
             <div className="space-y-2">
-              <Label className="text-xs">リサイズ時の背景色</Label>
+              <Label className="text-xs">リサイズ時の背景色（旧設定・全体共通）</Label>
               <div className="flex items-center gap-2 max-w-xs">
                 <input
                   type="color"
