@@ -68,6 +68,7 @@ const defaultExport: ExportSettings = {
   bgColor: "#FFFFFF",
   showFrame: true,
   showLogo: true,
+  formatBgColors: {},
 };
 
 interface CreateFlowContextValue {
