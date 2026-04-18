@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
