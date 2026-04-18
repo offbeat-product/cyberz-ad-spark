@@ -668,25 +668,16 @@ const CreateFrames = () => {
                             canvasH={CANVAS_H}
                             scale={ratio}
                             onSizeChange={(w, h) => {
-                              const prev = copyrightSizeRef.current;
                               copyrightSizeRef.current = { w, h };
-
-                              setCopyrightCoordState((curr) => {
-                                // 初回測定（prev.h が 0 or 未設定）のときは差分計算しない
-                                const deltaH = prev.h > 0 ? h - prev.h : 0;
-
-                                // 要素の中心位置でアンカー判定：下半分なら「下端固定」、上半分なら「上端固定」
-                                const prevH = prev.h > 0 ? prev.h : h;
-                                const elementCenterY = curr.y + prevH / 2;
-                                const isBottomAligned = elementCenterY > CANVAS_H / 2;
-
-                                // 下端アンカー時は高さ増加分だけ y を上にずらす → 下端が固定される
-                                const adjustedY = isBottomAligned ? curr.y - deltaH : curr.y;
-                                return clampCoord(curr.x, adjustedY);
+                            }}
+                            onDragStart={() => pushHistory()}
+                            onDrag={(nx, ny) => {
+                              const base = computePresetCoord(copyrightPos);
+                              setCopyrightOffset({
+                                x: nx - base.x,
+                                y: ny - base.y,
                               });
                             }}
-                            onDragStart={() => pushHistory(copyrightCoord)}
-                            onDrag={(nx, ny) => setCopyrightCoordState(clampCoord(nx, ny))}
                           />
                         )}
                       </div>
