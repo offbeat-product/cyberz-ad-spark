@@ -39,7 +39,7 @@ export interface ExportSettings {
   showLogo: boolean;
 }
 
-const defaultBasic: BasicData = { title: "", media: "", copyright: "" };
+const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
 
 const defaultText: TextSettings = {
   vertical: false,
