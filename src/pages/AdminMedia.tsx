@@ -351,86 +351,169 @@ const AdminMedia = () => {
         </div>
       </div>
 
-      {/* Media master modal (simplified) */}
-      <Dialog open={masterOpen} onOpenChange={setMasterOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      {/* Media master modal — 2-step wizard */}
+      <Dialog open={masterOpen} onOpenChange={(v) => !v && cancelWizard()}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingMasterId ? "媒体を編集" : "媒体を追加"}</DialogTitle>
+            <DialogTitle>
+              {editingMasterId ? "媒体を編集" : "媒体を追加"} ({wizardStep}/2)
+            </DialogTitle>
             <DialogDescription>
-              基本情報のみ登録します。フレーム・ロゴは作成後に追加できます。
+              {wizardStep === 1
+                ? "媒体の基本情報を入力します。"
+                : "フレームとロゴを登録してください。後から追加・編集もできます。"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <Label>
-                媒体名 <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                value={masterForm.name}
-                onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
-                placeholder="例：ピッコマ"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>デフォルトトランジション</Label>
-              <Select
-                value={masterForm.transition}
-                onValueChange={(v: Transition) => setMasterForm({ ...masterForm, transition: v })}
+          {/* Step indicator */}
+          <div className="flex items-center gap-3 py-2">
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  wizardStep === 1
+                    ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white"
+                    : "bg-primary text-primary-foreground"
+                }`}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(transitionLabels) as Transition[]).map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {transitionLabels[k]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <PresetField
-              label="デフォルト切り替え秒数"
-              presets={switchPresets}
-              value={masterForm.switchSec}
-              onChange={(v) => setMasterForm({ ...masterForm, switchSec: v })}
-            />
-
-            <PresetField
-              label="デフォルト表示秒数"
-              presets={displayPresets}
-              value={masterForm.displaySec}
-              onChange={(v) => setMasterForm({ ...masterForm, displaySec: v })}
-            />
-
-            <div className="space-y-2">
-              <Label>デフォルト背景色</Label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={masterForm.bgColor}
-                  onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
-                  className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
-                />
-                <Input
-                  value={masterForm.bgColor}
-                  onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
-                  className="w-32 font-mono"
-                />
+                {wizardStep === 1 ? "1" : <Check className="h-3.5 w-3.5" />}
               </div>
+              <span className={`text-sm ${wizardStep === 1 ? "font-semibold" : "text-muted-foreground"}`}>
+                基本情報
+              </span>
+            </div>
+            <div className="h-px flex-1 bg-border" />
+            <div className="flex items-center gap-2">
+              <div
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  wizardStep === 2
+                    ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white"
+                    : "border border-border bg-background text-muted-foreground"
+                }`}
+              >
+                2
+              </div>
+              <span className={`text-sm ${wizardStep === 2 ? "font-semibold" : "text-muted-foreground"}`}>
+                フレーム・ロゴ設定
+              </span>
             </div>
           </div>
 
+          {wizardStep === 1 && (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label>
+                  媒体名 <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  value={masterForm.name}
+                  onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
+                  placeholder="例：ピッコマ"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>デフォルトトランジション</Label>
+                <Select
+                  value={masterForm.transition}
+                  onValueChange={(v: Transition) => setMasterForm({ ...masterForm, transition: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(transitionLabels) as Transition[]).map((k) => (
+                      <SelectItem key={k} value={k}>
+                        {transitionLabels[k]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <PresetField
+                label="デフォルト切り替え秒数"
+                presets={switchPresets}
+                value={masterForm.switchSec}
+                onChange={(v) => setMasterForm({ ...masterForm, switchSec: v })}
+              />
+
+              <PresetField
+                label="デフォルト表示秒数"
+                presets={displayPresets}
+                value={masterForm.displaySec}
+                onChange={(v) => setMasterForm({ ...masterForm, displaySec: v })}
+              />
+
+              <div className="space-y-2">
+                <Label>デフォルト背景色</Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={masterForm.bgColor}
+                    onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
+                    className="h-10 w-16 rounded border border-border bg-background cursor-pointer"
+                  />
+                  <Input
+                    value={masterForm.bgColor}
+                    onChange={(e) => setMasterForm({ ...masterForm, bgColor: e.target.value })}
+                    className="w-32 font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 2 && wizardMasterId && (
+            <WizardStep2
+              mediaId={wizardMasterId}
+              frames={frames.filter((f) => f.mediaMasterId === wizardMasterId)}
+              logos={logos.filter((l) => l.mediaMasterId === wizardMasterId)}
+              noLogo={media.find((m) => m.id === wizardMasterId)?.noLogo ?? false}
+              onAddFrame={() => openAddAsset(wizardMasterId, "frame")}
+              onAddLogo={() => openAddAsset(wizardMasterId, "logo")}
+              onEditFrame={(a) => openEditAsset(wizardMasterId, "frame", a)}
+              onEditLogo={(a) => openEditAsset(wizardMasterId, "logo", a)}
+              onDeleteFrame={(id) => deleteAsset("frame", id)}
+              onDeleteLogo={(id) => deleteAsset("logo", id)}
+              onSetDefaultFrame={(id) => setDefaultAsset("frame", wizardMasterId, id)}
+              onSetDefaultLogo={(id) => setDefaultAsset("logo", wizardMasterId, id)}
+              onNoLogoChange={(v) => setNoLogo(wizardMasterId, v)}
+            />
+          )}
+
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setMasterOpen(false)}>
-              キャンセル
-            </Button>
-            <Button onClick={saveMaster}>{editingMasterId ? "更新" : "保存"}</Button>
+            {wizardStep === 1 ? (
+              <>
+                <Button variant="outline" onClick={cancelWizard}>
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={submitStep1}
+                  className="bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
+                >
+                  次へ <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <div className="flex w-full items-center justify-between gap-2">
+                <Button variant="outline" onClick={() => setWizardStep(1)}>
+                  <ArrowLeft className="mr-1 h-4 w-4" /> 戻る
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" onClick={() => finishWizard(true)}>
+                    後で設定する
+                  </Button>
+                  <Button
+                    onClick={() => finishWizard(true)}
+                    className="bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
+                  >
+                    完了
+                  </Button>
+                </div>
+              </div>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
