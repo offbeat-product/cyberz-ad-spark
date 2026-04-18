@@ -881,7 +881,33 @@ const CreateFrames = () => {
                       <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">X (px)</Label>
+                          <Label
+                            className="text-[10px] text-muted-foreground select-none cursor-ew-resize hover:text-primary transition-colors"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              const startClientX = e.clientX;
+                              const startValue = copyrightOffset.x;
+                              pushHistory();
+                              document.body.style.cursor = "ew-resize";
+                              (e.target as Element).setPointerCapture?.(e.pointerId);
+                              const onMove = (ev: PointerEvent) => {
+                                const dx = ev.clientX - startClientX;
+                                const speed = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
+                                const delta = Math.round(dx * speed);
+                                const next = Math.max(-500, Math.min(500, startValue + delta));
+                                setCopyrightOffset((prev) => ({ ...prev, x: next }));
+                              };
+                              const onUp = () => {
+                                document.body.style.cursor = "";
+                                window.removeEventListener("pointermove", onMove);
+                                window.removeEventListener("pointerup", onUp);
+                              };
+                              window.addEventListener("pointermove", onMove);
+                              window.addEventListener("pointerup", onUp);
+                            }}
+                          >
+                            X (px) ⇔
+                          </Label>
                           <Input
                             type="number"
                             min={-500}
@@ -896,7 +922,33 @@ const CreateFrames = () => {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Y (px)</Label>
+                          <Label
+                            className="text-[10px] text-muted-foreground select-none cursor-ew-resize hover:text-primary transition-colors"
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              const startClientX = e.clientX;
+                              const startValue = copyrightOffset.y;
+                              pushHistory();
+                              document.body.style.cursor = "ew-resize";
+                              (e.target as Element).setPointerCapture?.(e.pointerId);
+                              const onMove = (ev: PointerEvent) => {
+                                const dx = ev.clientX - startClientX;
+                                const speed = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
+                                const delta = Math.round(dx * speed);
+                                const next = Math.max(-500, Math.min(500, startValue + delta));
+                                setCopyrightOffset((prev) => ({ ...prev, y: next }));
+                              };
+                              const onUp = () => {
+                                document.body.style.cursor = "";
+                                window.removeEventListener("pointermove", onMove);
+                                window.removeEventListener("pointerup", onUp);
+                              };
+                              window.addEventListener("pointermove", onMove);
+                              window.addEventListener("pointerup", onUp);
+                            }}
+                          >
+                            Y (px) ⇔
+                          </Label>
                           <Input
                             type="number"
                             min={-500}
