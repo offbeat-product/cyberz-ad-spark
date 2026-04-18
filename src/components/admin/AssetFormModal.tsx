@@ -239,11 +239,12 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                           type="number"
                           value={form.position[k]}
                           onChange={(e) =>
-                            setForm({
-                              ...form,
-                              position: { ...form.position, [k]: Number(e.target.value) },
-                            })
+                            setForm((p) => ({
+                              ...p,
+                              position: { ...p.position, [k]: Number(e.target.value) },
+                            }))
                           }
+                          onBlur={(e) => updatePosField(k, Number(e.target.value))}
                         />
                       </div>
                     ))}
