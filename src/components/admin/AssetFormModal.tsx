@@ -276,25 +276,24 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
             </DialogFooter>
           </div>
 
-          <div className="flex h-full flex-col overflow-hidden bg-muted/20 p-6">
+          <div className="flex h-full flex-col overflow-hidden bg-white p-6">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-semibold">プレビュー</span>
               <span className="text-xs text-muted-foreground">
                 {form.position.w}×{form.position.h}
               </span>
             </div>
-            <div className="flex flex-1 items-center justify-center overflow-hidden min-h-0">
+            <div className="flex flex-1 justify-center overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
-                className="relative overflow-hidden rounded-lg border border-border"
+                className="relative overflow-hidden rounded-lg"
                 style={{
                   aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
-                  maxHeight: "100%",
-                  maxWidth: "100%",
-                  height: "100%",
                   width: "100%",
-                  objectFit: "contain",
+                  maxHeight: "100%",
+                  border: "1px solid #e0e0e0",
                   backgroundColor: "#f0f0f0",
+                  alignSelf: "flex-start",
                 }}
               >
                 <div
