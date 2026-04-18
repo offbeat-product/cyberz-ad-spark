@@ -588,9 +588,12 @@ const CreateFrames = () => {
               );
             })()}
           </div>
+        </div>
 
-          {/* Text edit panel */}
-          <div className="border-l border-border overflow-y-auto p-5 space-y-5 bg-background">
+        {/* ===== Right column (30%): Settings panel (scrollable) ===== */}
+        <div className="overflow-y-auto p-5 space-y-6 bg-background min-h-0">
+          {/* ① Text settings */}
+          <section className="space-y-5">
             <h2 className="text-sm font-semibold">テキスト設定</h2>
 
             <div className="flex gap-2">
