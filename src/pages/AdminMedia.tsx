@@ -47,39 +47,6 @@ const transitionLabels: Record<Transition, string> = {
 const switchPresets = [0.2, 0.3, 0.5, 0.8, 1.0];
 const displayPresets = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0];
 
-interface Frame {
-  id: string;
-  mediaMasterId: string;
-  name: string;
-  imageUrl: string | null;
-  position: Box;
-  isDefault: boolean;
-}
-
-interface Logo {
-  id: string;
-  mediaMasterId: string;
-  name: string;
-  imageUrl: string | null;
-  position: Box;
-  isDefault: boolean;
-}
-
-interface MediaMaster {
-  id: string;
-  name: string;
-  transition: Transition;
-  switchSec: number;
-  displaySec: number;
-  bgColor: string;
-  noLogo: boolean;
-}
-
-const initialMedia: MediaMaster[] = [
-  { id: "1", name: "ピッコマ", transition: "fade", switchSec: 0.3, displaySec: 2.0, bgColor: "#000000", noLogo: false },
-  { id: "2", name: "コミックシーモア", transition: "slide-lr", switchSec: 0.5, displaySec: 2.5, bgColor: "#000000", noLogo: false },
-  { id: "3", name: "まんが王国", transition: "zoom-in", switchSec: 0.3, displaySec: 3.0, bgColor: "#000000", noLogo: false },
-];
 
 const blankMaster = (): Omit<MediaMaster, "id"> => ({
   name: "",
