@@ -73,7 +73,12 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
       const canvas = canvasRef.current;
       if (!canvas) return;
       const cw = canvas.clientWidth;
-      if (cw > 0) setScale(cw / Math.max(form.position.w, 1));
+      const ch = canvas.clientHeight;
+      if (cw > 0 && ch > 0) {
+        const sx = cw / Math.max(form.position.w, 1);
+        const sy = ch / Math.max(form.position.h, 1);
+        setScale(Math.min(sx, sy));
+      }
     };
     compute();
     const ro = new ResizeObserver(compute);
