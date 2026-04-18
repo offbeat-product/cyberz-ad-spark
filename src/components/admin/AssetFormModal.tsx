@@ -78,7 +78,9 @@ const AssetFormModal = ({
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasWrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.25);
+  const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
 
   // Undo/redo history of position
   const [history, setHistory] = useState<Box[]>([]);
