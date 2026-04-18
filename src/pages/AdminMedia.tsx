@@ -343,17 +343,14 @@ const AdminMedia = () => {
               <Input
                 value={masterForm.name}
                 onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
-                placeholder="例：LINEマンガ"
+                placeholder="例：ピッコマ"
               />
             </div>
 
             <Separator />
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>デフォルトトランジション</Label>
-                <TransitionDemo transition={masterForm.transition} compact />
-              </div>
+              <Label>デフォルトトランジション</Label>
               <Select
                 value={masterForm.transition}
                 onValueChange={(v: Transition) => setMasterForm({ ...masterForm, transition: v })}
@@ -369,7 +366,6 @@ const AdminMedia = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <TransitionDemo transition={masterForm.transition} />
             </div>
 
             <PresetField
