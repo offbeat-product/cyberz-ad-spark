@@ -465,14 +465,15 @@ const CreateFrames = () => {
               const offsetX = (canvasW - innerW) / 2;
               const offsetY = (canvasH - innerH) / 2;
               // Fit canvas to available preview area width and height
-              const maxW = Math.max(160, previewAreaWidth - 48); // padding
-              const maxH = Math.max(200, previewAreaHeight - 120); // size buttons + padding
+              const maxW = Math.max(160, previewAreaWidth - 48);
+              const maxH = Math.max(200, previewAreaHeight - 48);
               const ratio = Math.min(maxW / canvasW, maxH / canvasH);
               const dispW = canvasW * ratio;
               const dispH = canvasH * ratio;
 
               return (
-                <div className="flex justify-center w-full">
+                <div className="flex items-center justify-center">
+
                   <div
                     className="relative rounded-lg overflow-hidden shadow-sm border border-border"
                     style={{
