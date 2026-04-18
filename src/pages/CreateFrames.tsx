@@ -119,6 +119,7 @@ const CreateFrames = () => {
 
   // Text settings shortcuts from context
   const {
+    visible: textVisible,
     vertical, text, pos, font, fontSize, color, blend,
     strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
   } = textSettings;
