@@ -212,20 +212,18 @@ const CreateFrames = () => {
   const undoCopyright = () => {
     const prev = undoStackRef.current.pop();
     if (!prev) return;
-    setCopyrightCoordState((curr) => {
-      redoStackRef.current.push(curr);
-      if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-      return prev;
-    });
+    redoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    if (redoStackRef.current.length > 20) redoStackRef.current.shift();
+    setCopyrightPos(prev.pos);
+    setCopyrightOffset(prev.offset);
   };
   const redoCopyright = () => {
     const next = redoStackRef.current.pop();
     if (!next) return;
-    setCopyrightCoordState((curr) => {
-      undoStackRef.current.push(curr);
-      if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-      return next;
-    });
+    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
+    setCopyrightPos(next.pos);
+    setCopyrightOffset(next.offset);
   };
 
   // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo
