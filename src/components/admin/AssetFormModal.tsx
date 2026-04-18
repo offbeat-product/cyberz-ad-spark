@@ -385,11 +385,11 @@ const AssetFormModal = ({
               </span>
             </div>
 
-            {/* Logo: frame selector or canvas size selector */}
+            {/* Logo: frame selector + canvas size selector */}
             {kind === "logo" && (
-              <div className="mb-3">
-                {hasFrames ? (
-                  <Select value={selectedFrameId} onValueChange={setSelectedFrameId}>
+              <div className="mb-3 space-y-2">
+                {hasFrames && (
+                  <Select value={selectedFrameId} onValueChange={handleSelectFrame}>
                     <SelectTrigger
                       className={
                         selectedFrameId !== "none"
@@ -409,33 +409,32 @@ const AssetFormModal = ({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {([
-                      { w: 1080, h: 1350 },
-                      { w: 1080, h: 1920 },
-                      { w: 1080, h: 1080 },
-                    ] as const).map((s) => {
-                      const active = fallbackSize.w === s.w && fallbackSize.h === s.h;
-                      return (
-                        <Button
-                          key={`${s.w}x${s.h}`}
-                          type="button"
-                          size="sm"
-                          variant={active ? "default" : "outline"}
-                          className={
-                            active
-                              ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
-                              : ""
-                          }
-                          onClick={() => setFallbackSize({ w: s.w, h: s.h })}
-                        >
-                          {s.w}×{s.h}
-                        </Button>
-                      );
-                    })}
-                  </div>
                 )}
+                <div className="flex flex-wrap gap-2">
+                  {([
+                    { w: 1080, h: 1350 },
+                    { w: 1080, h: 1920 },
+                    { w: 1080, h: 1080 },
+                  ] as const).map((s) => {
+                    const active = canvasSize.w === s.w && canvasSize.h === s.h;
+                    return (
+                      <Button
+                        key={`${s.w}x${s.h}`}
+                        type="button"
+                        size="sm"
+                        variant={active ? "default" : "outline"}
+                        className={
+                          active
+                            ? "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90"
+                            : ""
+                        }
+                        onClick={() => setCanvasSize({ w: s.w, h: s.h })}
+                      >
+                        {s.w}×{s.h}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
