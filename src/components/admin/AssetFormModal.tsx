@@ -73,7 +73,12 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
       const canvas = canvasRef.current;
       if (!canvas) return;
       const cw = canvas.clientWidth;
-      if (cw > 0) setScale(cw / Math.max(form.position.w, 1));
+      const ch = canvas.clientHeight;
+      if (cw > 0 && ch > 0) {
+        const sx = cw / Math.max(form.position.w, 1);
+        const sy = ch / Math.max(form.position.h, 1);
+        setScale(Math.min(sx, sy));
+      }
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -193,7 +198,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[900px] max-w-[95vw] h-[85vh] max-h-[800px] overflow-hidden p-0 sm:rounded-lg">
+      <DialogContent className="w-[900px] max-w-[95vw] h-[90vh] max-h-[90vh] overflow-hidden p-0 sm:rounded-lg">
         <div className="grid h-full grid-cols-2">
           <div className="flex h-full flex-col overflow-hidden border-r border-border">
             <div className="flex-1 overflow-y-auto p-6">
@@ -278,13 +283,17 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                 {form.position.w}×{form.position.h}
               </span>
             </div>
-            <div className="flex flex-1 items-center justify-center overflow-hidden">
+            <div className="flex flex-1 items-center justify-center overflow-hidden min-h-0">
               <div
                 ref={canvasRef}
-                className="relative w-full overflow-hidden rounded-lg border border-border"
+                className="relative overflow-hidden rounded-lg border border-border"
                 style={{
                   aspectRatio: `${Math.max(form.position.w, 1)} / ${Math.max(form.position.h, 1)}`,
                   maxHeight: "100%",
+                  maxWidth: "100%",
+                  height: "100%",
+                  width: "100%",
+                  objectFit: "contain",
                   backgroundColor: "#f0f0f0",
                 }}
               >
@@ -309,7 +318,7 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave }: Props) =>
                         top: form.position.y,
                         width: form.position.w,
                         height: form.position.h,
-                        objectFit: "cover",
+                        objectFit: "contain",
                         outline:
                           kind === "frame"
                             ? "2px dashed rgba(64,158,234,0.7)"
