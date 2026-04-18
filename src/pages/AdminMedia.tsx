@@ -343,7 +343,7 @@ const AdminMedia = () => {
               <Input
                 value={masterForm.name}
                 onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
-                placeholder="例：LINEマンガ"
+                placeholder="例：ピッコマ"
               />
             </div>
 
