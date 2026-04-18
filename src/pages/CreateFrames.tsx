@@ -364,39 +364,170 @@ const CreateFrames = () => {
         {/* Right: Preview + Text edit */}
         <div className="grid grid-cols-[1fr_320px] min-h-0">
           {/* Preview */}
-          <div className="overflow-y-auto p-8 flex items-start justify-center bg-muted/20">
-            <div
-              className="relative bg-muted rounded-lg overflow-hidden shadow-sm"
-              style={{ width: 360, height: 450 }}
-            >
-              {selectedFrame?.image ? (
-                <img src={selectedFrame.image} alt="frame" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                  コマプレビュー
-                </div>
-              )}
-              <div
-                className="absolute -translate-x-1/2 -translate-y-1/2 px-3 py-1 cursor-move select-none"
-                style={{
-                  left: `${pos.x}%`,
-                  top: `${pos.y}%`,
-                  color,
-                  fontFamily: font,
-                  fontSize: fontSize / 2,
-                  writingMode: vertical ? "vertical-rl" : "horizontal-tb",
-                  WebkitTextStroke: `${strokeWidth / 2}px ${strokeColor}`,
-                  background: bgEnabled
-                    ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
-                        .toString(16)
-                        .padStart(2, "0")}`
-                    : "transparent",
-                  mixBlendMode: blend === "通常" ? "normal" : blend === "乗算" ? "multiply" : blend === "スクリーン" ? "screen" : "overlay",
-                }}
-              >
-                {text || "テキスト"}
-              </div>
+          <div className="overflow-y-auto p-6 bg-muted/20">
+            {/* Size selector */}
+            <div className="mb-4 flex items-center gap-2">
+              {([
+                { id: "main", label: "1080×1350", w: 1080, h: 1350 },
+                { id: "vertical", label: "1080×1920", w: 1080, h: 1920 },
+                { id: "square", label: "1080×1080", w: 1080, h: 1080 },
+              ] as const).map((s) => {
+                const active = previewSize === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setPreviewSize(s.id)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
+                      active
+                        ? "text-white border-transparent shadow-sm"
+                        : "bg-background border-border text-muted-foreground hover:bg-muted",
+                    )}
+                    style={
+                      active
+                        ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
+                        : undefined
+                    }
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
             </div>
+
+            {(() => {
+              const sizes = {
+                main: { w: 1080, h: 1350 },
+                vertical: { w: 1080, h: 1920 },
+                square: { w: 1080, h: 1080 },
+              } as const;
+              const { w: canvasW, h: canvasH } = sizes[previewSize];
+              // Comic area is always 1080x1350 centered inside canvas
+              const innerW = 1080;
+              const innerH = 1350;
+              const offsetX = (canvasW - innerW) / 2;
+              const offsetY = (canvasH - innerH) / 2;
+              // Display size: fit within available height (max 560px) and width (max 420px)
+              const maxW = 420;
+              const maxH = 560;
+              const ratio = Math.min(maxW / canvasW, maxH / canvasH);
+              const dispW = canvasW * ratio;
+              const dispH = canvasH * ratio;
+
+              return (
+                <div className="flex justify-center">
+                  <div
+                    className="relative rounded-lg overflow-hidden shadow-sm border border-border"
+                    style={{
+                      width: dispW,
+                      height: dispH,
+                      backgroundColor: previewSize === "main" ? "#e5e5e5" : masterBgColor,
+                    }}
+                  >
+                    {/* Scaled stage at canvas pixel size */}
+                    <div
+                      className="absolute left-0 top-0 origin-top-left"
+                      style={{
+                        width: canvasW,
+                        height: canvasH,
+                        transform: `scale(${ratio})`,
+                      }}
+                    >
+                      {/* ② Comic image area (1080x1350) centered */}
+                      <div
+                        className="absolute overflow-hidden bg-muted"
+                        style={{ left: offsetX, top: offsetY, width: innerW, height: innerH }}
+                      >
+                        {selectedFrame?.image ? (
+                          <img
+                            src={selectedFrame.image}
+                            alt="frame"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                            コマプレビュー
+                          </div>
+                        )}
+
+                        {/* ③ Frame asset */}
+                        {defaultFrameAsset?.imageUrl && (
+                          <img
+                            src={defaultFrameAsset.imageUrl}
+                            alt="default frame"
+                            className="absolute pointer-events-none object-contain"
+                            style={{
+                              left: defaultFrameAsset.position.x,
+                              top: defaultFrameAsset.position.y,
+                              width: defaultFrameAsset.position.w,
+                              height: defaultFrameAsset.position.h,
+                            }}
+                          />
+                        )}
+
+                        {/* ④ Logo asset */}
+                        {defaultLogoAsset?.imageUrl && !selectedMaster?.noLogo && (
+                          <img
+                            src={defaultLogoAsset.imageUrl}
+                            alt="default logo"
+                            className="absolute pointer-events-none object-contain"
+                            style={{
+                              left: defaultLogoAsset.position.x,
+                              top: defaultLogoAsset.position.y,
+                              width: defaultLogoAsset.position.w,
+                              height: defaultLogoAsset.position.h,
+                            }}
+                          />
+                        )}
+
+                        {/* ⑤ Text */}
+                        <div
+                          className="absolute -translate-x-1/2 -translate-y-1/2 px-6 py-2 select-none"
+                          style={{
+                            left: `${pos.x}%`,
+                            top: `${pos.y}%`,
+                            color,
+                            fontFamily: font,
+                            fontSize: fontSize,
+                            writingMode: vertical ? "vertical-rl" : "horizontal-tb",
+                            WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+                            background: bgEnabled
+                              ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
+                                  .toString(16)
+                                  .padStart(2, "0")}`
+                              : "transparent",
+                            mixBlendMode:
+                              blend === "通常"
+                                ? "normal"
+                                : blend === "乗算"
+                                  ? "multiply"
+                                  : blend === "スクリーン"
+                                    ? "screen"
+                                    : "overlay",
+                          }}
+                        >
+                          {text || "テキスト"}
+                        </div>
+
+                        {/* ⑥ Copyright */}
+                        {basic.copyright && (
+                          <div
+                            className="absolute bottom-3 right-4 text-white/90 select-none pointer-events-none"
+                            style={{
+                              fontSize: 18,
+                              textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+                            }}
+                          >
+                            {basic.copyright}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Text edit panel */}
