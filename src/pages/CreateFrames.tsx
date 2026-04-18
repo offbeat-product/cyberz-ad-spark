@@ -632,24 +632,65 @@ const CreateFrames = () => {
                           </div>
                         )}
 
-                        {/* ⑥ Copyright */}
-                        {showCopyright && basic.copyright && (
-                          <div
-                            className="absolute select-none pointer-events-none"
-                            style={{
-                              ...(copyrightPos === "bottom-left" && { left: 8, bottom: 8 }),
-                              ...(copyrightPos === "bottom-right" && { right: 8, bottom: 8 }),
-                              ...(copyrightPos === "top-left" && { left: 8, top: 8 }),
-                              ...(copyrightPos === "top-right" && { right: 8, top: 8 }),
-                              color: copyrightColor,
-                              fontFamily: copyrightFont,
-                              fontSize: copyrightSize,
-                              textShadow: "0 1px 2px rgba(0,0,0,0.6)",
-                            }}
-                          >
-                            {basic.copyright}
-                          </div>
-                        )}
+                        {/* ⑥ Copyright (draggable) */}
+                        {showCopyright && basic.copyright && (() => {
+                          // Anchor: based on which edge is closest, so pos% maps to a corner
+                          const anchorH = copyrightCoord.x < 50 ? "left" : "right";
+                          const anchorV = copyrightCoord.y < 50 ? "top" : "bottom";
+                          const transformX = anchorH === "left" ? "0%" : "-100%";
+                          const transformY = anchorV === "top" ? "0%" : "-100%";
+                          const positionStyle: React.CSSProperties = {
+                            [anchorH === "left" ? "left" : "right"]:
+                              `${anchorH === "left" ? copyrightCoord.x : 100 - copyrightCoord.x}%`,
+                            [anchorV === "top" ? "top" : "bottom"]:
+                              `${anchorV === "top" ? copyrightCoord.y : 100 - copyrightCoord.y}%`,
+                            transform: `translate(${transformX}, ${transformY})`,
+                          };
+
+                          const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const stageEl = e.currentTarget.parentElement; // inner comic area
+                            if (!stageEl) return;
+                            const rect = stageEl.getBoundingClientRect();
+                            const startX = e.clientX;
+                            const startY = e.clientY;
+                            const startCoord = copyrightCoord;
+                            // Push history snapshot once at drag start
+                            pushHistory(startCoord);
+                            (e.target as Element).setPointerCapture?.(e.pointerId);
+                            const onMove = (ev: PointerEvent) => {
+                              const dx = ((ev.clientX - startX) / rect.width) * 100;
+                              const dy = ((ev.clientY - startY) / rect.height) * 100;
+                              const nx = Math.max(0, Math.min(100, startCoord.x + dx));
+                              const ny = Math.max(0, Math.min(100, startCoord.y + dy));
+                              setCopyrightCoordState({ x: nx, y: ny });
+                            };
+                            const onUp = () => {
+                              window.removeEventListener("pointermove", onMove);
+                              window.removeEventListener("pointerup", onUp);
+                            };
+                            window.addEventListener("pointermove", onMove);
+                            window.addEventListener("pointerup", onUp);
+                          };
+
+                          return (
+                            <div
+                              onPointerDown={onPointerDown}
+                              className="absolute select-none cursor-grab active:cursor-grabbing whitespace-nowrap"
+                              style={{
+                                ...positionStyle,
+                                color: copyrightColor,
+                                fontFamily: copyrightFont,
+                                fontSize: copyrightSize,
+                                textShadow: "0 1px 2px rgba(0,0,0,0.6)",
+                                touchAction: "none",
+                              }}
+                            >
+                              {basic.copyright}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
