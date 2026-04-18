@@ -486,28 +486,42 @@ const CreateExport = () => {
           </section>
 
           {/* My Uploads */}
-          <section className="rounded-lg border border-border bg-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Upload className="h-4 w-4 text-primary" />
-                <h2 className="font-semibold">マイアップロード</h2>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                <Upload /> BGMを個別でアップロード
-              </Button>
+          <section className="rounded-lg border border-border bg-card p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">マイアップロード</h2>
+            </div>
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!bgmDragOver) setBgmDragOver(true);
+              }}
+              onDragLeave={() => setBgmDragOver(false)}
+              onDrop={handleBgmDrop}
+              className={cn(
+                "cursor-pointer rounded-lg border-2 border-dashed p-6 text-center transition-colors flex flex-col items-center gap-2",
+                bgmDragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-background hover:bg-muted/40",
+              )}
+            >
+              <Upload className="h-7 w-7 text-muted-foreground" />
+              <div className="text-sm font-medium">ここに音源ファイルをドロップ</div>
+              <div className="text-xs text-muted-foreground">またはクリックして選択</div>
+              <div className="text-xs text-muted-foreground">MP3 / WAV / M4A（最大50MB）</div>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="audio/mp3,audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/m4a,audio/x-m4a,.mp3,.wav,.m4a"
+                multiple
                 className="hidden"
                 onChange={handleFileSelected}
               />
             </div>
-            {uploadedBgms.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                MP3 / WAV / M4A（最大50MB）をアップロードできます
-              </p>
-            ) : (
+
+            {uploadedBgms.length > 0 && (
               <div className="space-y-1">
                 {uploadedBgms.map((bgm) => {
                   const selected = selectedBgmId === bgm.id;
