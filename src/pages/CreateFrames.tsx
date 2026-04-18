@@ -299,118 +299,33 @@ const CreateFrames = () => {
           )}
 
           <h2 className="text-sm font-semibold">コマ一覧（{frames.length}）</h2>
-          {frames.map((f, idx) => {
-            const selected = f.id === selectedId;
-            return (
-              <div
-                key={f.id}
-                onClick={() => setSelectedId(f.id)}
-                className={cn(
-                  "rounded-lg border bg-card p-4 cursor-pointer transition-colors",
-                  selected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-muted-foreground/30",
-                )}
-              >
-                <div className="flex gap-4">
-                  <div className="w-20 h-28 bg-muted rounded overflow-hidden flex items-center justify-center text-xs text-muted-foreground shrink-0">
-                    {f.image ? (
-                      <img src={f.image} alt={`コマ${idx + 1}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <>コマ{idx + 1}</>
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-3 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium truncate">
-                        コマ {idx + 1}
-                        {f.name ? <span className="text-xs text-muted-foreground ml-2">{f.name}</span> : null}
-                      </span>
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">表示秒数</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {displayPresets.map((p) => (
-                          <button
-                            key={p}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateFrame(f.id, { display: p });
-                            }}
-                            className={cn(
-                              "px-2 py-0.5 text-xs rounded border",
-                              f.display === p
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background border-border hover:bg-muted",
-                            )}
-                          >
-                            {p}s
-                          </button>
-                        ))}
-                        <Input
-                          type="number"
-                          value={f.display}
-                          onChange={(e) => updateFrame(f.id, { display: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-6 w-16 text-xs"
-                          step="0.1"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">切り替え秒数</Label>
-                      <div className="flex flex-wrap gap-1">
-                        {transitionPresets.map((p) => (
-                          <button
-                            key={p}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateFrame(f.id, { transitionTime: p });
-                            }}
-                            className={cn(
-                              "px-2 py-0.5 text-xs rounded border",
-                              f.transitionTime === p
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background border-border hover:bg-muted",
-                            )}
-                          >
-                            {p}s
-                          </button>
-                        ))}
-                        <Input
-                          type="number"
-                          value={f.transitionTime}
-                          onChange={(e) => updateFrame(f.id, { transitionTime: Number(e.target.value) })}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-6 w-16 text-xs"
-                          step="0.1"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-xs text-muted-foreground">トランジション</Label>
-                      <Select
-                        value={f.transition}
-                        onValueChange={(v) => updateFrame(f.id, { transition: v })}
-                      >
-                        <SelectTrigger className="h-8 text-xs" onClick={(e) => e.stopPropagation()}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {transitionOptions.map((t) => (
-                            <SelectItem key={t} value={t}>
-                              {t}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+          {frames.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-background/40 p-6 text-center text-sm text-muted-foreground">
+              まだコマがありません。上のエリアから画像をアップロードしてください。
+            </div>
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={frames.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-4">
+                  {frames.map((f, idx) => (
+                    <SortableFrameCard
+                      key={f.id}
+                      frame={f}
+                      index={idx}
+                      total={frames.length}
+                      selected={f.id === selectedId}
+                      onSelect={() => setSelectedId(f.id)}
+                      onUpdate={(patch) => updateFrame(f.id, patch)}
+                      onMoveUp={() => moveFrame(idx, idx - 1)}
+                      onMoveDown={() => moveFrame(idx, idx + 1)}
+                      onDelete={() => requestDelete(f.id)}
+                    />
+                  ))}
                 </div>
-              </div>
-            );
-          })}
+              </SortableContext>
+            </DndContext>
+          )}
 
           <button
             onClick={addFrame}
@@ -419,6 +334,24 @@ const CreateFrames = () => {
             <Plus className="h-4 w-4" /> コマを追加
           </button>
         </div>
+
+        <AlertDialog open={pendingDeleteId !== null} onOpenChange={(o) => !o && setPendingDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>このコマを削除しますか？</AlertDialogTitle>
+              <AlertDialogDescription>
+                削除したコマは元に戻せません。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                削除
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
 
         {/* Right: Preview + Text edit */}
         <div className="grid grid-cols-[1fr_320px] min-h-0">
