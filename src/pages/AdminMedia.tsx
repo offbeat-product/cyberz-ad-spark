@@ -544,6 +544,118 @@ const AdminMedia = () => {
   );
 };
 
+interface WizardStep2Props {
+  mediaId: string;
+  frames: Frame[];
+  logos: Logo[];
+  noLogo: boolean;
+  onAddFrame: () => void;
+  onAddLogo: () => void;
+  onEditFrame: (a: Frame) => void;
+  onEditLogo: (a: Logo) => void;
+  onDeleteFrame: (id: string) => void;
+  onDeleteLogo: (id: string) => void;
+  onSetDefaultFrame: (id: string) => void;
+  onSetDefaultLogo: (id: string) => void;
+  onNoLogoChange: (v: boolean) => void;
+}
+
+const WizardStep2 = ({
+  frames,
+  logos,
+  noLogo,
+  onAddFrame,
+  onAddLogo,
+  onEditFrame,
+  onEditLogo,
+  onDeleteFrame,
+  onDeleteLogo,
+  onSetDefaultFrame,
+  onSetDefaultLogo,
+  onNoLogoChange,
+}: WizardStep2Props) => {
+  const gradientBtn =
+    "bg-gradient-to-r from-[#409EEA] to-[#6C81FC] text-white border-transparent hover:opacity-90";
+  return (
+    <div className="space-y-6">
+      {/* Frames */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold">フレーム一覧</h4>
+          {frames.length > 0 && (
+            <Button size="sm" className={gradientBtn} onClick={onAddFrame}>
+              <Plus className="h-3 w-3" /> フレームを追加
+            </Button>
+          )}
+        </div>
+        {frames.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-background p-6 text-center">
+            <div className="mb-3 text-xs text-muted-foreground">まだフレームが登録されていません</div>
+            <Button size="sm" className={gradientBtn} onClick={onAddFrame}>
+              <Plus className="h-3 w-3" /> フレームを追加
+            </Button>
+          </div>
+        ) : (
+          <AssetSection
+            title=""
+            kind="frame"
+            assets={frames}
+            onAdd={onAddFrame}
+            onEdit={(a) => onEditFrame(a as Frame)}
+            onDelete={onDeleteFrame}
+            onSetDefault={onSetDefaultFrame}
+            hideHeader
+          />
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Logos */}
+      <div className={`space-y-3 ${noLogo ? "opacity-60" : ""}`}>
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold">ロゴ一覧</h4>
+          {logos.length > 0 && !noLogo && (
+            <Button size="sm" className={gradientBtn} onClick={onAddLogo}>
+              <Plus className="h-3 w-3" /> ロゴを追加
+            </Button>
+          )}
+        </div>
+        {logos.length === 0 ? (
+          <div className="rounded-md border border-dashed border-border bg-background p-6 text-center">
+            <div className="mb-3 text-xs text-muted-foreground">まだロゴが登録されていません</div>
+            <Button size="sm" className={gradientBtn} onClick={onAddLogo} disabled={noLogo}>
+              <Plus className="h-3 w-3" /> ロゴを追加
+            </Button>
+          </div>
+        ) : (
+          <AssetSection
+            title=""
+            kind="logo"
+            assets={logos}
+            disabled={noLogo}
+            onAdd={onAddLogo}
+            onEdit={(a) => onEditLogo(a as Logo)}
+            onDelete={onDeleteLogo}
+            onSetDefault={onSetDefaultLogo}
+            hideHeader
+          />
+        )}
+        <div className="flex items-center gap-2 pl-1">
+          <Checkbox
+            id="wizard-nologo"
+            checked={noLogo}
+            onCheckedChange={(v) => onNoLogoChange(!!v)}
+          />
+          <Label htmlFor="wizard-nologo" className="cursor-pointer text-sm">
+            ロゴなし（この媒体ではロゴを使用しない）
+          </Label>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface AssetSectionProps {
   title: string;
   kind: "frame" | "logo";
