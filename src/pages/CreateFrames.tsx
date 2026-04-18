@@ -100,6 +100,8 @@ const CreateFrames = () => {
   const [copyrightSize, setCopyrightSize] = useState(12);
   type CopyrightPos = "bottom-left" | "bottom-right" | "top-left" | "top-right";
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
+  const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
+  const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
   const [logoId, setLogoId] = useState<string>("");
 
   // Resolve defaults from the selected media master (matched by id)
@@ -449,9 +451,9 @@ const CreateFrames = () => {
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <div className="flex flex-row items-center gap-2 text-xs text-muted-foreground">
                     <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
-                    <span>コピーライトを表示</span>
+                    <span className="whitespace-nowrap">コピーライトを表示</span>
                     {showCopyright && (
                       <div className="flex items-center gap-2 ml-2">
                         <Slider
@@ -462,36 +464,81 @@ const CreateFrames = () => {
                           onValueChange={(v) => setCopyrightSize(v[0])}
                           className="w-32"
                         />
-                        <span className="text-xs tabular-nums w-12">{copyrightSize}px</span>
+                        <span className="text-xs tabular-nums w-12 whitespace-nowrap">{copyrightSize}px</span>
                       </div>
                     )}
                   </div>
                   {showCopyright && (
-                    <div className="flex items-center gap-1">
-                      {([
-                        { id: "bottom-left", label: "左下" },
-                        { id: "bottom-right", label: "右下" },
-                        { id: "top-left", label: "左上" },
-                        { id: "top-right", label: "右上" },
-                      ] as const).map((p) => {
-                        const active = copyrightPos === p.id;
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => setCopyrightPos(p.id)}
-                            className={cn(
-                              "rounded px-2 py-1 text-[10px] border transition-colors",
-                              active
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background border-border text-muted-foreground hover:bg-muted",
-                            )}
-                          >
-                            {p.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <>
+                      <div className="flex items-center gap-1">
+                        {([
+                          { id: "bottom-left", label: "左下" },
+                          { id: "bottom-right", label: "右下" },
+                          { id: "top-left", label: "左上" },
+                          { id: "top-right", label: "右上" },
+                        ] as const).map((p) => {
+                          const active = copyrightPos === p.id;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => setCopyrightPos(p.id)}
+                              className={cn(
+                                "rounded px-2 py-1 text-[10px] border transition-colors whitespace-nowrap",
+                                active
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-background border-border text-muted-foreground hover:bg-muted",
+                              )}
+                            >
+                              {p.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">フォント</span>
+                        <Select value={copyrightFont} onValueChange={setCopyrightFont}>
+                          <SelectTrigger className="h-8 text-xs min-w-[160px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["Noto Sans JP", "Noto Serif JP", "M PLUS Rounded 1c", "Zen Maru Gothic"].map((f) => (
+                              <SelectItem key={f} value={f}>{f}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">カラー</span>
+                        <input
+                          type="color"
+                          value={copyrightColor}
+                          onChange={(e) => setCopyrightColor(e.target.value)}
+                          className="h-7 w-9 cursor-pointer rounded border border-border bg-background p-0"
+                        />
+                        <div className="flex items-center gap-1">
+                          {[
+                            { c: "#FFFFFF", label: "白" },
+                            { c: "#000000", label: "黒" },
+                            { c: "#888888", label: "グレー" },
+                          ].map((p) => (
+                            <button
+                              key={p.c}
+                              type="button"
+                              onClick={() => setCopyrightColor(p.c)}
+                              title={p.label}
+                              className={cn(
+                                "h-6 w-6 rounded border transition-shadow",
+                                copyrightColor.toLowerCase() === p.c.toLowerCase()
+                                  ? "border-primary ring-2 ring-primary/40"
+                                  : "border-border",
+                              )}
+                              style={{ backgroundColor: p.c }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -528,13 +575,6 @@ const CreateFrames = () => {
               </div>
             </div>
 
-            {/* TEMP DEBUG */}
-            <div className="mb-3 w-full rounded border border-dashed border-amber-500/50 bg-amber-500/5 p-2 text-[11px] text-muted-foreground font-mono">
-              <div>選択中の媒体ID: {basic.mediaId || "(未選択)"}</div>
-              <div>media登録数: {media.length} / 全frame件数: {masterFrames.length}</div>
-              <div>この媒体のframe件数: {mediaFrameAssets.length}</div>
-              <div>defaultFrameAsset: {defaultFrameAsset ? `${defaultFrameAsset.name} (isDefault=${defaultFrameAsset.isDefault}, hasImage=${!!defaultFrameAsset.imageUrl})` : "なし"}</div>
-            </div>
 
             {(() => {
               const sizes = {
@@ -655,7 +695,8 @@ const CreateFrames = () => {
                               ...(copyrightPos === "bottom-right" && { right: 8, bottom: 8 }),
                               ...(copyrightPos === "top-left" && { left: 8, top: 8 }),
                               ...(copyrightPos === "top-right" && { right: 8, top: 8 }),
-                              color: "#FFFFFF",
+                              color: copyrightColor,
+                              fontFamily: copyrightFont,
                               fontSize: copyrightSize,
                               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                             }}
