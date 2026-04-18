@@ -31,7 +31,7 @@ const projects: Project[] = [
 const statusConfig: Record<Status, { label: string; className: string }> = {
   draft: { label: "下書き", className: "bg-muted text-muted-foreground hover:bg-muted" },
   review: { label: "確認中", className: "bg-secondary/15 text-secondary-foreground border border-secondary/40 hover:bg-secondary/15" },
-  done: { label: "完了", className: "bg-gradient-primary text-primary-foreground border-transparent hover:opacity-90" },
+  done: { label: "完了", className: "bg-brand text-primary-foreground border-transparent hover:opacity-90" },
 };
 
 const Index = () => {

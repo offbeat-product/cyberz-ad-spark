@@ -54,10 +54,10 @@
 }
 
 @layer utilities {
-  .bg-gradient-primary {
+  .bg-brand {
     background-image: var(--gradient-primary);
   }
-  .bg-gradient-primary-hover:hover {
+  .hover\:bg-brand-hover:hover {
     background-image: var(--gradient-primary-hover);
   }
 }
