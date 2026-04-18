@@ -888,7 +888,7 @@ const CreateFrames = () => {
                               onClick={() => {
                                 pushHistory(copyrightCoord);
                                 setCopyrightPos(p.id);
-                                setCopyrightCoordState(presetToCoord(p.id));
+                                setCopyrightCoordState(applyPreset(p.id));
                               }}
                               className={cn(
                                 "rounded px-2 py-1 text-xs border transition-colors",
