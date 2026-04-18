@@ -964,6 +964,7 @@ const CreateFrames = () => {
           </Accordion>
         </div>
       </div>
+    </>
   );
 };
 
