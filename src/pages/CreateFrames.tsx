@@ -365,13 +365,13 @@ const CreateFrames = () => {
         {/* Right: Preview + Text edit */}
         <div className="grid grid-cols-[1fr_320px] min-h-0">
           {/* Preview */}
-          <div className="overflow-y-auto p-6 bg-muted/20">
+          <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
             {/* Size selector */}
-            <div className="mb-4 flex items-center gap-2">
+            <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
               {([
-                { id: "main", label: "1080×1350", w: 1080, h: 1350 },
-                { id: "vertical", label: "1080×1920", w: 1080, h: 1920 },
-                { id: "square", label: "1080×1080", w: 1080, h: 1080 },
+                { id: "main", label: "1080×1350" },
+                { id: "vertical", label: "1080×1920" },
+                { id: "square", label: "1080×1080" },
               ] as const).map((s) => {
                 const active = previewSize === s.id;
                 return (
@@ -409,15 +409,15 @@ const CreateFrames = () => {
               const innerH = 1350;
               const offsetX = (canvasW - innerW) / 2;
               const offsetY = (canvasH - innerH) / 2;
-              // Display size: fit within available height (max 560px) and width (max 420px)
-              const maxW = 420;
-              const maxH = 560;
+              // Fit canvas to available preview area width and height
+              const maxW = Math.max(160, previewAreaWidth - 48); // padding
+              const maxH = Math.max(200, previewAreaHeight - 120); // size buttons + padding
               const ratio = Math.min(maxW / canvasW, maxH / canvasH);
               const dispW = canvasW * ratio;
               const dispH = canvasH * ratio;
 
               return (
-                <div className="flex justify-center">
+                <div className="flex justify-center w-full">
                   <div
                     className="relative rounded-lg overflow-hidden shadow-sm border border-border"
                     style={{
