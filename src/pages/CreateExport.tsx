@@ -182,6 +182,8 @@ const CreateExport = () => {
   const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
   const [uploadAsTemplate, setUploadAsTemplate] = useState<"yes" | "no">("no");
   const [uploadTemplateCategory, setUploadTemplateCategory] = useState<string>("");
+  const [uploadQueue, setUploadQueue] = useState<File[]>([]);
+  const [bgmDragOver, setBgmDragOver] = useState(false);
 
   // Volume
   const [normalizeVolume, setNormalizeVolume] = useState(true);
