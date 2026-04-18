@@ -66,7 +66,15 @@ const blank = (kind: "frame" | "logo"): AssetFormValue => ({
 
 const HISTORY_MAX = 20;
 
-const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFrameUrl }: Props) => {
+const AssetFormModal = ({
+  open,
+  onOpenChange,
+  kind,
+  initial,
+  onSave,
+  defaultFrameUrl,
+  availableFrames = [],
+}: Props) => {
   const [form, setForm] = useState<AssetFormValue>(initial ?? blank(kind));
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -77,6 +85,11 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
   const [future, setFuture] = useState<Box[]>([]);
   const lastCommittedRef = useRef<Box | null>(null);
 
+  // Logo preview: which frame is selected ("none" or frame id), and fallback canvas size when no frames.
+  const hasFrames = availableFrames.length > 0;
+  const [selectedFrameId, setSelectedFrameId] = useState<string>("none");
+  const [fallbackSize, setFallbackSize] = useState<{ w: number; h: number }>({ w: 1080, h: 1350 });
+
   useEffect(() => {
     if (open) {
       const start = initial ?? blank(kind);
@@ -84,12 +97,33 @@ const AssetFormModal = ({ open, onOpenChange, kind, initial, onSave, defaultFram
       setHistory([]);
       setFuture([]);
       lastCommittedRef.current = start.position;
+      // Default to the default frame if available.
+      const def = availableFrames.find((f) => f.isDefault) ?? availableFrames[0];
+      setSelectedFrameId(def ? def.id : "none");
+      setFallbackSize({ w: 1080, h: 1350 });
     }
-  }, [open, initial, kind]);
+  }, [open, initial, kind, availableFrames]);
 
-  // Canvas dims: logos always preview on a fixed 1080x1350 stage.
-  const canvasW = kind === "logo" ? 1080 : Math.max(form.position.w, 1);
-  const canvasH = kind === "logo" ? 1350 : Math.max(form.position.h, 1);
+  const selectedFrame = useMemo(
+    () => availableFrames.find((f) => f.id === selectedFrameId) ?? null,
+    [availableFrames, selectedFrameId],
+  );
+
+  // Canvas dims:
+  // - frame kind: the form's own w/h
+  // - logo kind: selected frame's w/h, else fallback size
+  const canvasW =
+    kind === "logo"
+      ? selectedFrame
+        ? selectedFrame.width
+        : fallbackSize.w
+      : Math.max(form.position.w, 1);
+  const canvasH =
+    kind === "logo"
+      ? selectedFrame
+        ? selectedFrame.height
+        : fallbackSize.h
+      : Math.max(form.position.h, 1);
 
   // Recompute scale to fit canvas inside parent (both width and height)
   useEffect(() => {
