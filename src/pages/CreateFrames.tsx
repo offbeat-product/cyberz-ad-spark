@@ -110,9 +110,12 @@ const CreateFrames = () => {
     transition: selectedMaster ? transitionKeyToLabel[selectedMaster.transition] : "フェード",
   };
   const masterBgColor = selectedMaster?.bgColor ?? "#000000";
-  const defaultFrameAsset = selectedMaster
-    ? masterFrames.find((f) => f.mediaMasterId === selectedMaster.id && f.isDefault)
-    : undefined;
+  const mediaFrameAssets = selectedMaster
+    ? masterFrames.filter((f) => f.mediaMasterId === selectedMaster.id)
+    : [];
+  // Prefer the explicit default; fall back to first registered frame for this media
+  const defaultFrameAsset =
+    mediaFrameAssets.find((f) => f.isDefault) ?? mediaFrameAssets[0];
   const availableLogos = selectedMaster
     ? masterLogos.filter((l) => l.mediaMasterId === selectedMaster.id)
     : [];
