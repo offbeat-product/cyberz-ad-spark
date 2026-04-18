@@ -134,20 +134,24 @@ const AssetFormModal = ({
       if (!wrap) return;
       const pw = wrap.clientWidth;
       const ph = wrap.clientHeight;
-      if (pw <= 0 || ph <= 0) return;
+      if (pw <= 0) return;
       let w = pw;
       let h = w * (canvasH / canvasW);
-      if (h > ph) {
+      if (ph > 0 && h > ph) {
         h = ph;
         w = h * (canvasW / canvasH);
       }
       setDisplaySize({ w, h });
       setScale(w / canvasW);
     };
-    compute();
+    // Run on next frame so the wrap has measured layout (modal mount).
+    const raf = requestAnimationFrame(compute);
     const ro = new ResizeObserver(compute);
     if (canvasWrapRef.current) ro.observe(canvasWrapRef.current);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, [open, canvasW, canvasH]);
 
   const commitPosition = (next: Box) => {
@@ -450,8 +454,9 @@ const AssetFormModal = ({
                 ref={canvasRef}
                 className="relative overflow-hidden rounded-lg"
                 style={{
-                  width: displaySize.w || "100%",
-                  height: displaySize.h || "auto",
+                  width: displaySize.w > 0 ? displaySize.w : "100%",
+                  aspectRatio: `${canvasW} / ${canvasH}`,
+                  height: displaySize.h > 0 ? displaySize.h : undefined,
                   border: "1px solid #e0e0e0",
                   backgroundColor: "#f0f0f0",
                 }}
