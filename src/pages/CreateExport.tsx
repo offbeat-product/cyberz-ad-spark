@@ -11,6 +11,7 @@ import {
   VolumeX,
   Download,
   Play,
+  Pause,
   Square,
   Upload,
   ChevronDown,
