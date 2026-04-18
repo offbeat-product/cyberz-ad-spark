@@ -94,6 +94,11 @@ const CreateFrames = () => {
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
 
+  // Layer visibility / logo selection
+  const [showFrame, setShowFrame] = useState(true);
+  const [showCopyright, setShowCopyright] = useState(true);
+  const [logoId, setLogoId] = useState<string>("");
+
   // Resolve defaults from the selected media master (matched by id)
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const mediaDefaults = {
@@ -105,8 +110,27 @@ const CreateFrames = () => {
   const defaultFrameAsset = selectedMaster
     ? masterFrames.find((f) => f.mediaMasterId === selectedMaster.id && f.isDefault)
     : undefined;
-  const defaultLogoAsset = selectedMaster
-    ? masterLogos.find((l) => l.mediaMasterId === selectedMaster.id && l.isDefault)
+  const availableLogos = selectedMaster
+    ? masterLogos.filter((l) => l.mediaMasterId === selectedMaster.id)
+    : [];
+  const defaultLogoAsset = availableLogos.find((l) => l.isDefault);
+
+  // Initialize logo selection when media changes
+  useEffect(() => {
+    if (!selectedMaster) {
+      setLogoId("");
+      return;
+    }
+    if (selectedMaster.noLogo) {
+      setLogoId("none");
+    } else {
+      setLogoId(defaultLogoAsset?.id ?? "none");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMaster?.id]);
+
+  const activeLogoAsset = logoId && logoId !== "none"
+    ? availableLogos.find((l) => l.id === logoId)
     : undefined;
 
   // Bulk upload state
@@ -383,35 +407,70 @@ const CreateFrames = () => {
         <div className="grid grid-cols-[1fr_320px] min-h-0">
           {/* Preview */}
           <div ref={previewAreaRef} className="overflow-y-auto p-6 bg-muted/20 flex flex-col items-center">
-            {/* Size selector */}
-            <div className="mb-4 flex items-center justify-center gap-2 flex-wrap">
-              {([
-                { id: "main", label: "1080×1350" },
-                { id: "vertical", label: "1080×1920" },
-                { id: "square", label: "1080×1080" },
-              ] as const).map((s) => {
-                const active = previewSize === s.id;
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setPreviewSize(s.id)}
-                    className={cn(
-                      "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
-                      active
-                        ? "text-white border-transparent shadow-sm"
-                        : "bg-background border-border text-muted-foreground hover:bg-muted",
-                    )}
-                    style={
-                      active
-                        ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
-                        : undefined
-                    }
+            {/* Controls bar */}
+            <div className="mb-4 w-full flex items-center justify-between gap-3 flex-wrap">
+              {/* Left: layer toggles + logo dropdown */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch checked={showFrame} onCheckedChange={setShowFrame} />
+                  フレームを表示
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">ロゴ</span>
+                  <Select
+                    value={logoId}
+                    onValueChange={setLogoId}
+                    disabled={!selectedMaster || availableLogos.length === 0}
                   >
-                    {s.label}
-                  </button>
-                );
-              })}
+                    <SelectTrigger className="h-8 text-xs min-w-[140px]">
+                      <SelectValue placeholder="ロゴなし" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ロゴなし</SelectItem>
+                      {availableLogos.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Switch checked={showCopyright} onCheckedChange={setShowCopyright} />
+                  コピーライトを表示
+                </label>
+              </div>
+
+              {/* Right: size selector */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "main", label: "1080×1350" },
+                  { id: "vertical", label: "1080×1920" },
+                  { id: "square", label: "1080×1080" },
+                ] as const).map((s) => {
+                  const active = previewSize === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setPreviewSize(s.id)}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 text-xs font-medium transition-colors border",
+                        active
+                          ? "text-white border-transparent shadow-sm"
+                          : "bg-background border-border text-muted-foreground hover:bg-muted",
+                      )}
+                      style={
+                        active
+                          ? { background: "linear-gradient(90deg, #409EEA, #6C81FC)" }
+                          : undefined
+                      }
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {(() => {
@@ -470,7 +529,7 @@ const CreateFrames = () => {
                         )}
 
                         {/* ③ Frame asset */}
-                        {defaultFrameAsset?.imageUrl && (
+                        {showFrame && defaultFrameAsset?.imageUrl && (
                           <img
                             src={defaultFrameAsset.imageUrl}
                             alt="default frame"
@@ -485,16 +544,16 @@ const CreateFrames = () => {
                         )}
 
                         {/* ④ Logo asset */}
-                        {defaultLogoAsset?.imageUrl && !selectedMaster?.noLogo && (
+                        {activeLogoAsset?.imageUrl && (
                           <img
-                            src={defaultLogoAsset.imageUrl}
-                            alt="default logo"
+                            src={activeLogoAsset.imageUrl}
+                            alt="logo"
                             className="absolute pointer-events-none object-contain"
                             style={{
-                              left: defaultLogoAsset.position.x,
-                              top: defaultLogoAsset.position.y,
-                              width: defaultLogoAsset.position.w,
-                              height: defaultLogoAsset.position.h,
+                              left: activeLogoAsset.position.x,
+                              top: activeLogoAsset.position.y,
+                              width: activeLogoAsset.position.w,
+                              height: activeLogoAsset.position.h,
                             }}
                           />
                         )}
@@ -531,11 +590,14 @@ const CreateFrames = () => {
                         )}
 
                         {/* ⑥ Copyright */}
-                        {basic.copyright && (
+                        {showCopyright && basic.copyright && (
                           <div
-                            className="absolute bottom-3 right-4 text-white/90 select-none pointer-events-none"
+                            className="absolute select-none pointer-events-none"
                             style={{
-                              fontSize: 18,
+                              left: 8,
+                              bottom: 8,
+                              color: "#FFFFFF",
+                              fontSize: 14,
                               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
                             }}
                           >
