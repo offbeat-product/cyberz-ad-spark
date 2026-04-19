@@ -389,6 +389,17 @@ const CreateFrames = () => {
 
   const selectedFrame = frames.find((f) => f.id === selectedId);
 
+  // Frames whose image data was lost (e.g., after reload from localStorage)
+  const missingFrames = useMemo(
+    () => frames.filter((f) => !!f.name && !f.image),
+    [frames],
+  );
+
+  const handleNext = () => {
+    saveAsDraft({ step: 3, silent: true });
+    navigate("/create/export");
+  };
+
   return (
     <>
       <PageHeader
@@ -399,12 +410,36 @@ const CreateFrames = () => {
             <Button variant="outline" onClick={() => navigate("/create")}>
               戻る
             </Button>
-            <Button onClick={() => navigate("/create/export")}>次へ</Button>
+            <Button variant="outline" onClick={() => saveAsDraft({ step: 2 })}>
+              <Save className="h-4 w-4" /> 下書き保存
+            </Button>
+            <Button onClick={handleNext}>次へ</Button>
           </>
         }
       />
       <div className="p-8 pb-4 border-b border-border bg-background">
         <StepIndicator steps={steps} current={1} />
+        {missingFrames.length > 0 && (
+          <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-4 flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-sm">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                画像を再アップロードしてください
+              </p>
+              <p className="text-amber-800 dark:text-amber-300/80 text-xs">
+                保存時に画像データは容量の都合で保存されていません。以下のファイルを再アップロードしてください：
+              </p>
+              <ul className="text-xs text-amber-900 dark:text-amber-200 list-disc pl-5">
+                {missingFrames.map((f) => (
+                  <li key={f.id}>{f.name}</li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400/80">
+                ※ファイル名が一致するコマには、保存時の設定（秒数・トランジション等）が自動復元されます
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 grid grid-cols-[30%_40%_30%] min-h-0">
