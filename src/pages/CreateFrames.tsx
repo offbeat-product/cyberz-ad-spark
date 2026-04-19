@@ -331,28 +331,53 @@ const CreateFrames = () => {
     setUploadDone(0);
     setCompletedCount(null);
 
+    // Snapshot of slots that need image rebinding (have name but missing image)
+    const slotsByName = new Map<string, string>(); // fileName -> frameId
+    frames.forEach((f) => {
+      if (f.name && !f.image) slotsByName.set(f.name, f.id);
+    });
+
+    const rebinds: Array<{ id: string; image: string }> = [];
     const newFrames: FrameData[] = [];
+    let rebindCount = 0;
+
     for (let i = 0; i < files.length; i++) {
       try {
         const dataUrl = await readFileAsDataUrl(files[i]);
-        newFrames.push({
-          id: `f${Date.now()}_${i}`,
-          display: mediaDefaults.display,
-          transitionTime: mediaDefaults.transitionTime,
-          transition: mediaDefaults.transition,
-          image: dataUrl,
-          name: files[i].name,
-        });
+        const matchedId = slotsByName.get(files[i].name);
+        if (matchedId) {
+          rebinds.push({ id: matchedId, image: dataUrl });
+          slotsByName.delete(files[i].name);
+          rebindCount++;
+        } else {
+          newFrames.push({
+            id: `f${Date.now()}_${i}`,
+            display: mediaDefaults.display,
+            transitionTime: mediaDefaults.transitionTime,
+            transition: mediaDefaults.transition,
+            image: dataUrl,
+            name: files[i].name,
+          });
+        }
       } catch (e) {
         // skip
       }
       setUploadDone(i + 1);
     }
 
-    setFrames((prev) => [...prev, ...newFrames]);
+    setFrames((prev) => {
+      const rebindMap = new Map(rebinds.map((r) => [r.id, r.image]));
+      const updated = prev.map((f) =>
+        rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
+      );
+      return [...updated, ...newFrames];
+    });
     if (newFrames.length > 0) setSelectedId(newFrames[0].id);
     setUploading(false);
-    setCompletedCount(newFrames.length);
+    setCompletedCount(newFrames.length + rebindCount);
+    if (rebindCount > 0) {
+      toast.success(`${rebindCount}件の画像を保存時の設定で復元しました`);
+    }
     setTimeout(() => setCompletedCount(null), 3000);
   };
 
