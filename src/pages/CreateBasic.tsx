@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Save } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "�
 
 const CreateBasic = () => {
   const navigate = useNavigate();
-  const { basic, setBasic, reset } = useCreateFlow();
+  const { basic, setBasic, reset, saveAsDraft } = useCreateFlow();
   const { media: mediaMasters } = useMediaMasters();
   const hasMedia = mediaMasters.length > 0;
 
@@ -30,6 +31,11 @@ const CreateBasic = () => {
   const handleMediaChange = (id: string) => {
     const selected = mediaMasters.find((m) => m.id === id);
     setBasic((p) => ({ ...p, mediaId: id, media: selected?.name ?? "" }));
+  };
+
+  const handleNext = () => {
+    saveAsDraft({ step: 2, silent: true });
+    navigate("/create/frames");
   };
 
   return (
@@ -89,7 +95,10 @@ const CreateBasic = () => {
           <Button variant="outline" onClick={handleCancel}>
             キャンセル
           </Button>
-          <Button onClick={() => navigate("/create/frames")}>次へ</Button>
+          <Button variant="outline" onClick={() => saveAsDraft({ step: 1 })}>
+            <Save className="h-4 w-4" /> 下書き保存
+          </Button>
+          <Button onClick={handleNext}>次へ</Button>
         </div>
       </div>
     </>
