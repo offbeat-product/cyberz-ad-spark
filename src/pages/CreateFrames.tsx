@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, AlignLeft, AlignCenter, Upload, CheckCircle2 } from "lucide-react";
+import { Plus, AlignLeft, AlignCenter, Upload, CheckCircle2, Save, AlertTriangle } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -91,7 +91,7 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { basic, frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft } = useCreateFlow();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
