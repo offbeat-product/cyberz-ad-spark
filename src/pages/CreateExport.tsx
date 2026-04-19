@@ -18,6 +18,7 @@ import {
   Volume2,
   Trash2,
   Dices,
+  Save,
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
@@ -141,7 +142,7 @@ type UploadedBGM = {
 
 const CreateExport = () => {
   const navigate = useNavigate();
-  const { basic, exportSettings, setExportSettings } = useCreateFlow();
+  const { basic, exportSettings, setExportSettings, saveAsDraft } = useCreateFlow();
   const { media } = useMediaMasters();
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
   const masterBgColor = selectedMaster?.bgColor ?? "#000000";
@@ -317,8 +318,9 @@ const CreateExport = () => {
   };
 
   const handleExport = () => {
+    saveAsDraft({ step: 3, status: "exported", silent: true });
     toast.success("動画の書き出しを開始しました", {
-      description: `${selectedFormats.length}種類のフォーマットで生成中…`,
+      description: `${selectedFormats.length}種類のフォーマットで生成中…（※実処理は未実装）`,
     });
   };
 
@@ -331,6 +333,9 @@ const CreateExport = () => {
           <>
             <Button variant="outline" onClick={() => navigate("/create/frames")}>
               戻る
+            </Button>
+            <Button variant="outline" onClick={() => saveAsDraft({ step: 3 })}>
+              <Save className="h-4 w-4" /> 下書き保存
             </Button>
             <Button onClick={handleExport}>
               <Download /> 動画を書き出す
