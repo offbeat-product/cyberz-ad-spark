@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, AlignLeft, AlignCenter, Upload, CheckCircle2 } from "lucide-react";
+import { Plus, AlignLeft, AlignCenter, Upload, CheckCircle2, Save, AlertTriangle } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -91,7 +91,7 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { basic, frames, setFrames, textSettings, setTextSettings } = useCreateFlow();
+  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft } = useCreateFlow();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
@@ -331,28 +331,53 @@ const CreateFrames = () => {
     setUploadDone(0);
     setCompletedCount(null);
 
+    // Snapshot of slots that need image rebinding (have name but missing image)
+    const slotsByName = new Map<string, string>(); // fileName -> frameId
+    frames.forEach((f) => {
+      if (f.name && !f.image) slotsByName.set(f.name, f.id);
+    });
+
+    const rebinds: Array<{ id: string; image: string }> = [];
     const newFrames: FrameData[] = [];
+    let rebindCount = 0;
+
     for (let i = 0; i < files.length; i++) {
       try {
         const dataUrl = await readFileAsDataUrl(files[i]);
-        newFrames.push({
-          id: `f${Date.now()}_${i}`,
-          display: mediaDefaults.display,
-          transitionTime: mediaDefaults.transitionTime,
-          transition: mediaDefaults.transition,
-          image: dataUrl,
-          name: files[i].name,
-        });
+        const matchedId = slotsByName.get(files[i].name);
+        if (matchedId) {
+          rebinds.push({ id: matchedId, image: dataUrl });
+          slotsByName.delete(files[i].name);
+          rebindCount++;
+        } else {
+          newFrames.push({
+            id: `f${Date.now()}_${i}`,
+            display: mediaDefaults.display,
+            transitionTime: mediaDefaults.transitionTime,
+            transition: mediaDefaults.transition,
+            image: dataUrl,
+            name: files[i].name,
+          });
+        }
       } catch (e) {
         // skip
       }
       setUploadDone(i + 1);
     }
 
-    setFrames((prev) => [...prev, ...newFrames]);
+    setFrames((prev) => {
+      const rebindMap = new Map(rebinds.map((r) => [r.id, r.image]));
+      const updated = prev.map((f) =>
+        rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
+      );
+      return [...updated, ...newFrames];
+    });
     if (newFrames.length > 0) setSelectedId(newFrames[0].id);
     setUploading(false);
-    setCompletedCount(newFrames.length);
+    setCompletedCount(newFrames.length + rebindCount);
+    if (rebindCount > 0) {
+      toast.success(`${rebindCount}件の画像を保存時の設定で復元しました`);
+    }
     setTimeout(() => setCompletedCount(null), 3000);
   };
 
@@ -364,6 +389,17 @@ const CreateFrames = () => {
 
   const selectedFrame = frames.find((f) => f.id === selectedId);
 
+  // Frames whose image data was lost (e.g., after reload from localStorage)
+  const missingFrames = useMemo(
+    () => frames.filter((f) => !!f.name && !f.image),
+    [frames],
+  );
+
+  const handleNext = () => {
+    saveAsDraft({ step: 3, silent: true });
+    navigate("/create/export");
+  };
+
   return (
     <>
       <PageHeader
@@ -374,12 +410,36 @@ const CreateFrames = () => {
             <Button variant="outline" onClick={() => navigate("/create")}>
               戻る
             </Button>
-            <Button onClick={() => navigate("/create/export")}>次へ</Button>
+            <Button variant="outline" onClick={() => saveAsDraft({ step: 2 })}>
+              <Save className="h-4 w-4" /> 下書き保存
+            </Button>
+            <Button onClick={handleNext}>次へ</Button>
           </>
         }
       />
       <div className="p-8 pb-4 border-b border-border bg-background">
         <StepIndicator steps={steps} current={1} />
+        {missingFrames.length > 0 && (
+          <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="space-y-1 text-sm">
+              <p className="font-semibold text-foreground">
+                画像を再アップロードしてください
+              </p>
+              <p className="text-muted-foreground text-xs">
+                保存時に画像データは容量の都合で保存されていません。以下のファイルを再アップロードしてください：
+              </p>
+              <ul className="text-xs text-foreground list-disc pl-5">
+                {missingFrames.map((f) => (
+                  <li key={f.id}>{f.name}</li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-muted-foreground">
+                ※ファイル名が一致するコマには、保存時の設定（秒数・トランジション等）が自動復元されます
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 grid grid-cols-[30%_40%_30%] min-h-0">
