@@ -420,21 +420,21 @@ const CreateFrames = () => {
       <div className="p-8 pb-4 border-b border-border bg-background">
         <StepIndicator steps={steps} current={1} />
         {missingFrames.length > 0 && (
-          <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-4 flex gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
             <div className="space-y-1 text-sm">
-              <p className="font-semibold text-amber-900 dark:text-amber-200">
+              <p className="font-semibold text-foreground">
                 画像を再アップロードしてください
               </p>
-              <p className="text-amber-800 dark:text-amber-300/80 text-xs">
+              <p className="text-muted-foreground text-xs">
                 保存時に画像データは容量の都合で保存されていません。以下のファイルを再アップロードしてください：
               </p>
-              <ul className="text-xs text-amber-900 dark:text-amber-200 list-disc pl-5">
+              <ul className="text-xs text-foreground list-disc pl-5">
                 {missingFrames.map((f) => (
                   <li key={f.id}>{f.name}</li>
                 ))}
               </ul>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400/80">
+              <p className="text-[11px] text-muted-foreground">
                 ※ファイル名が一致するコマには、保存時の設定（秒数・トランジション等）が自動復元されます
               </p>
             </div>
