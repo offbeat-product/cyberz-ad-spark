@@ -281,8 +281,9 @@ const CreateFrames = () => {
   // Text settings shortcuts from context
   const {
     visible: textVisible,
-    vertical, text, pos, font, fontSize, color, blend,
+    vertical, italic, text, pos, font, fontSize, color, blend,
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
+    bgPaddingX, bgPaddingY,
   } = textSettings;
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
