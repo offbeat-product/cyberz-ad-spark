@@ -1262,7 +1262,7 @@ const CreateFrames = () => {
                             label="X"
                             value={bgPaddingX}
                             onChange={(v) => patchText({ bgPaddingX: v })}
-                            min={0}
+                            min={-50}
                             max={200}
                             unit="px"
                           />
@@ -1270,7 +1270,7 @@ const CreateFrames = () => {
                             label="Y"
                             value={bgPaddingY}
                             onChange={(v) => patchText({ bgPaddingY: v })}
-                            min={0}
+                            min={-50}
                             max={200}
                             unit="px"
                           />
