@@ -227,7 +227,13 @@ const CreateFrames = () => {
     setCopyrightOffset(next.offset);
   };
 
-  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z redo
+  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo
+  const undoRef = useRef(undoCopyright);
+  const redoRef = useRef(redoCopyright);
+  useEffect(() => {
+    undoRef.current = undoCopyright;
+    redoRef.current = redoCopyright;
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -238,10 +244,10 @@ const CreateFrames = () => {
       const k = e.key.toLowerCase();
       if (k === "z" && !e.shiftKey) {
         e.preventDefault();
-        undoCopyright();
+        undoRef.current();
       } else if ((k === "z" && e.shiftKey) || k === "y") {
         e.preventDefault();
-        redoCopyright();
+        redoRef.current();
       }
     };
     window.addEventListener("keydown", onKey);
