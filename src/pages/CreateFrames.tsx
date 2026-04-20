@@ -137,7 +137,7 @@ const CreateFrames = () => {
   const PRESET_PADDING = 8;
   // Position is stored as preset + offset; final coord = preset + offset
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: -105 });
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: 105 });
   // Last measured element size in canvas px (kept in a ref for preset math)
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
