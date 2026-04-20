@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { SavedProject } from "@/types/project";
+import type { CopyrightSettings, SavedProject } from "@/types/project";
 import { restoreFramesFromMetadata, stripFrameImages } from "@/types/project";
 
 export interface FrameData {
@@ -115,6 +115,10 @@ interface CreateFlowContextValue {
   saveAsDraft: (opts?: { step?: 1 | 2 | 3; silent?: boolean; status?: "draft" | "exported" }) => string;
   loadProject: (id: string) => SavedProject | null;
   reset: () => void;
+  /** ページから「保存時に含めたい追加データの取得関数」を登録する */
+  registerExtrasProvider: (
+    fn: (() => { logoId?: string; copyright?: CopyrightSettings }) | null,
+  ) => void;
 }
 
 const CreateFlowContext = createContext<CreateFlowContextValue | null>(null);
@@ -125,6 +129,16 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
   const [textSettings, setTextSettings] = useState<TextSettings>(defaultText);
   const [exportSettings, setExportSettings] = useState<ExportSettings>(defaultExport);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+
+  // Page-supplied provider for extra fields to persist (logoId, copyright)
+  const extrasProviderRef = useRef<
+    (() => { logoId?: string; copyright?: CopyrightSettings }) | null
+  >(null);
+  const registerExtrasProvider = useCallback<
+    CreateFlowContextValue["registerExtrasProvider"]
+  >((fn) => {
+    extrasProviderRef.current = fn;
+  }, []);
 
   // Refs to access latest state inside saveAsDraft without stale closures
   const stateRef = useRef({ basic, frames, textSettings, exportSettings, currentProjectId });
@@ -147,6 +161,7 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
 
     const all = readProjects();
     const existing = all.find((p) => p.id === id);
+    const extras = extrasProviderRef.current?.() ?? {};
     const project: SavedProject = {
       id,
       title: b.title || "（無題）",
@@ -160,6 +175,8 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
       frames: stripFrameImages(f),
       textSettings: t,
       exportSettings: e,
+      logoId: extras.logoId ?? existing?.logoId,
+      copyright: extras.copyright ?? existing?.copyright,
     };
     const next = existing
       ? all.map((p) => (p.id === id ? project : p))
@@ -193,6 +210,7 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
         currentProjectId, setCurrentProjectId,
         saveAsDraft, loadProject,
         reset,
+        registerExtrasProvider,
       }}
     >
       {children}
