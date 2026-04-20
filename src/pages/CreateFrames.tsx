@@ -48,6 +48,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { useProjects } from "@/hooks/useProjects";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
 import { toast } from "sonner";
@@ -116,7 +117,8 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft } = useCreateFlow();
+  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft, currentProjectId, registerExtrasProvider } = useCreateFlow();
+  const { getProject } = useProjects();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
@@ -124,7 +126,7 @@ const CreateFrames = () => {
   // Layer visibility / logo selection
   const [showFrame, setShowFrame] = useState(true);
   const [showCopyright, setShowCopyright] = useState(true);
-  const [copyrightSize, setCopyrightSize] = useState(12);
+  const [copyrightSize, setCopyrightSize] = useState(40);
   type CopyrightPos =
     | "top-left" | "top-center" | "top-right"
     | "middle-left" | "middle-center" | "middle-right"
@@ -135,7 +137,7 @@ const CreateFrames = () => {
   const PRESET_PADDING = 8;
   // Position is stored as preset + offset; final coord = preset + offset
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: -105 });
   // Last measured element size in canvas px (kept in a ref for preset math)
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
@@ -166,7 +168,7 @@ const CreateFrames = () => {
     redoStackRef.current = [];
   };
   const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
-  const [copyrightColor, setCopyrightColor] = useState("#FFFFFF");
+  const [copyrightColor, setCopyrightColor] = useState("#000000");
   const [logoId, setLogoId] = useState<string>("");
 
   // Resolve defaults from the selected media master (matched by id)
