@@ -717,7 +717,7 @@ const CreateFrames = () => {
                             "-50%";
                           return (
                             <div
-                              className="absolute px-6 py-2 select-none"
+                              className="absolute select-none"
                               style={{
                                 left: `${pos.x}%`,
                                 top: `${pos.y}%`,
@@ -725,6 +725,11 @@ const CreateFrames = () => {
                                 color,
                                 fontFamily: font,
                                 fontSize: fontSize,
+                                fontStyle: italic ? "italic" : "normal",
+                                paddingLeft: `${bgPaddingX}px`,
+                                paddingRight: `${bgPaddingX}px`,
+                                paddingTop: `${bgPaddingY}px`,
+                                paddingBottom: `${bgPaddingY}px`,
                                 writingMode: vertical ? "vertical-rl" : "horizontal-tb",
                                 whiteSpace: "pre",
                                 WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "0 transparent",
@@ -733,14 +738,7 @@ const CreateFrames = () => {
                                       .toString(16)
                                       .padStart(2, "0")}`
                                   : "transparent",
-                                mixBlendMode:
-                                  blend === "通常"
-                                    ? "normal"
-                                    : blend === "乗算"
-                                      ? "multiply"
-                                      : blend === "スクリーン"
-                                        ? "screen"
-                                        : "overlay",
+                                mixBlendMode: (legacyBlendMap[blend] || blend) as React.CSSProperties["mixBlendMode"],
                               }}
                             >
                               {text || "テキスト"}
