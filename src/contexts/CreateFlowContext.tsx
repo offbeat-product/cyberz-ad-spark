@@ -28,6 +28,7 @@ export interface TextSettings {
   fontSize: number;
   color: string;
   blend: string;
+  strokeEnabled: boolean;
   strokeColor: string;
   strokeWidth: number;
   bgEnabled: boolean;
@@ -56,6 +57,7 @@ const defaultText: TextSettings = {
   fontSize: 48,
   color: "#1a1a1a",
   blend: "通常",
+  strokeEnabled: false,
   strokeColor: "#ffffff",
   strokeWidth: 2,
   bgEnabled: true,

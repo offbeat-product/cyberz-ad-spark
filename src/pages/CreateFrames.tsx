@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import SortableFrameCard from "@/components/create/SortableFrameCard";
 import CopyrightDraggable from "@/components/create/CopyrightDraggable";
+import ScrubbyNumberInput from "@/components/create/ScrubbyNumberInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,7 +252,7 @@ const CreateFrames = () => {
   const {
     visible: textVisible,
     vertical, text, pos, font, fontSize, color, blend,
-    strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
+    strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
   } = textSettings;
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
@@ -694,7 +695,8 @@ const CreateFrames = () => {
                                 fontFamily: font,
                                 fontSize: fontSize,
                                 writingMode: vertical ? "vertical-rl" : "horizontal-tb",
-                                WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+                                whiteSpace: "pre",
+                                WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "none",
                                 background: bgEnabled
                                   ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
                                       .toString(16)
