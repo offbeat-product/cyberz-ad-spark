@@ -22,6 +22,7 @@ export interface BasicData {
 export interface TextSettings {
   visible: boolean;
   vertical: boolean;
+  italic: boolean;
   text: string;
   pos: { x: number; y: number };
   font: string;
@@ -34,6 +35,8 @@ export interface TextSettings {
   bgEnabled: boolean;
   bgColor: string;
   bgOpacity: number;
+  bgPaddingX: number;
+  bgPaddingY: number;
 }
 
 export interface ExportSettings {
@@ -51,18 +54,21 @@ const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: 
 const defaultText: TextSettings = {
   visible: true,
   vertical: false,
+  italic: false,
   text: "運命を変える、その一歩。",
   pos: { x: 50, y: 50 },
   font: "Noto Sans JP",
   fontSize: 48,
   color: "#1a1a1a",
-  blend: "通常",
+  blend: "normal",
   strokeEnabled: false,
   strokeColor: "#ffffff",
   strokeWidth: 2,
   bgEnabled: true,
   bgColor: "#1D9E75",
   bgOpacity: 80,
+  bgPaddingX: 24,
+  bgPaddingY: 8,
 };
 
 const defaultFrames: FrameData[] = [];
