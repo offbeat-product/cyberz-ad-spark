@@ -18,6 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import SortableFrameCard from "@/components/create/SortableFrameCard";
 import CopyrightDraggable from "@/components/create/CopyrightDraggable";
+import ScrubbyNumberInput from "@/components/create/ScrubbyNumberInput";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -251,7 +252,7 @@ const CreateFrames = () => {
   const {
     visible: textVisible,
     vertical, text, pos, font, fontSize, color, blend,
-    strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
+    strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
   } = textSettings;
   const patchText = (patch: Partial<typeof textSettings>) =>
     setTextSettings((p) => ({ ...p, ...patch }));
@@ -694,7 +695,8 @@ const CreateFrames = () => {
                                 fontFamily: font,
                                 fontSize: fontSize,
                                 writingMode: vertical ? "vertical-rl" : "horizontal-tb",
-                                WebkitTextStroke: `${strokeWidth}px ${strokeColor}`,
+                                whiteSpace: "pre",
+                                WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "none",
                                 background: bgEnabled
                                   ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
                                       .toString(16)
@@ -940,88 +942,24 @@ const CreateFrames = () => {
                     <div className="space-y-2">
                       <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label
-                            className="text-[10px] text-muted-foreground select-none cursor-ew-resize hover:text-primary transition-colors"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              const startClientX = e.clientX;
-                              const startValue = copyrightOffset.x;
-                              pushHistory();
-                              document.body.style.cursor = "ew-resize";
-                              (e.target as Element).setPointerCapture?.(e.pointerId);
-                              const onMove = (ev: PointerEvent) => {
-                                const dx = ev.clientX - startClientX;
-                                const speed = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
-                                const delta = Math.round(dx * speed);
-                                const next = Math.max(-500, Math.min(500, startValue + delta));
-                                setCopyrightOffset((prev) => ({ ...prev, x: next }));
-                              };
-                              const onUp = () => {
-                                document.body.style.cursor = "";
-                                window.removeEventListener("pointermove", onMove);
-                                window.removeEventListener("pointerup", onUp);
-                              };
-                              window.addEventListener("pointermove", onMove);
-                              window.addEventListener("pointerup", onUp);
-                            }}
-                          >
-                            X (px) ⇔
-                          </Label>
-                          <Input
-                            type="number"
-                            min={-500}
-                            max={500}
-                            value={Math.round(copyrightOffset.x)}
-                            onChange={(e) => {
-                              const nx = Number(e.target.value);
-                              if (Number.isNaN(nx)) return;
-                              pushHistory();
-                              setCopyrightOffset((prev) => ({ ...prev, x: nx }));
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label
-                            className="text-[10px] text-muted-foreground select-none cursor-ew-resize hover:text-primary transition-colors"
-                            onPointerDown={(e) => {
-                              e.preventDefault();
-                              const startClientX = e.clientX;
-                              const startValue = copyrightOffset.y;
-                              pushHistory();
-                              document.body.style.cursor = "ew-resize";
-                              (e.target as Element).setPointerCapture?.(e.pointerId);
-                              const onMove = (ev: PointerEvent) => {
-                                const dx = ev.clientX - startClientX;
-                                const speed = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
-                                const delta = Math.round(dx * speed);
-                                const next = Math.max(-500, Math.min(500, startValue + delta));
-                                setCopyrightOffset((prev) => ({ ...prev, y: next }));
-                              };
-                              const onUp = () => {
-                                document.body.style.cursor = "";
-                                window.removeEventListener("pointermove", onMove);
-                                window.removeEventListener("pointerup", onUp);
-                              };
-                              window.addEventListener("pointermove", onMove);
-                              window.addEventListener("pointerup", onUp);
-                            }}
-                          >
-                            Y (px) ⇔
-                          </Label>
-                          <Input
-                            type="number"
-                            min={-500}
-                            max={500}
-                            value={Math.round(copyrightOffset.y)}
-                            onChange={(e) => {
-                              const ny = Number(e.target.value);
-                              if (Number.isNaN(ny)) return;
-                              pushHistory();
-                              setCopyrightOffset((prev) => ({ ...prev, y: ny }));
-                            }}
-                          />
-                        </div>
+                        <ScrubbyNumberInput
+                          label="X"
+                          value={copyrightOffset.x}
+                          onChange={(nx) => setCopyrightOffset((prev) => ({ ...prev, x: nx }))}
+                          onDragStart={() => pushHistory()}
+                          min={-500}
+                          max={500}
+                          unit="px"
+                        />
+                        <ScrubbyNumberInput
+                          label="Y"
+                          value={copyrightOffset.y}
+                          onChange={(ny) => setCopyrightOffset((prev) => ({ ...prev, y: ny }))}
+                          onDragStart={() => pushHistory()}
+                          min={-500}
+                          max={500}
+                          unit="px"
+                        />
                       </div>
                       <button
                         type="button"
@@ -1104,22 +1042,22 @@ const CreateFrames = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">X (%)</Label>
-                    <Input
-                      type="number"
-                      value={pos.x}
-                      onChange={(e) => patchText({ pos: { ...pos, x: Number(e.target.value) } })}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Y (%)</Label>
-                    <Input
-                      type="number"
-                      value={pos.y}
-                      onChange={(e) => patchText({ pos: { ...pos, y: Number(e.target.value) } })}
-                    />
-                  </div>
+                  <ScrubbyNumberInput
+                    label="X"
+                    value={pos.x}
+                    onChange={(nx) => patchText({ pos: { ...pos, x: nx } })}
+                    min={0}
+                    max={100}
+                    unit="%"
+                  />
+                  <ScrubbyNumberInput
+                    label="Y"
+                    value={pos.y}
+                    onChange={(ny) => patchText({ pos: { ...pos, y: ny } })}
+                    min={0}
+                    max={100}
+                    unit="%"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -1174,25 +1112,33 @@ const CreateFrames = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2 border-t border-border pt-4">
-                  <Label className="text-xs">枠線</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={strokeColor}
-                      onChange={(e) => patchText({ strokeColor: e.target.value })}
-                      className="h-9 w-14 rounded border border-border cursor-pointer"
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">枠線</Label>
+                    <Switch
+                      checked={strokeEnabled}
+                      onCheckedChange={(v) => patchText({ strokeEnabled: v })}
                     />
-                    <Input
-                      type="number"
-                      value={strokeWidth}
-                      onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
-                      min={0}
-                      max={20}
-                      className="w-20"
-                    />
-                    <span className="text-xs text-muted-foreground">px</span>
                   </div>
+                  {strokeEnabled && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={strokeColor}
+                        onChange={(e) => patchText({ strokeColor: e.target.value })}
+                        className="h-9 w-14 rounded border border-border cursor-pointer"
+                      />
+                      <Input
+                        type="number"
+                        value={strokeWidth}
+                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
+                        min={1}
+                        max={20}
+                        className="w-20"
+                      />
+                      <span className="text-xs text-muted-foreground">px</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3 border-t border-border pt-4">
