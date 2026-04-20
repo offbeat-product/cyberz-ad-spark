@@ -1204,6 +1204,27 @@ const CreateFrames = () => {
                           step={1}
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">余白（背景帯の内側）</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <ScrubbyNumberInput
+                            label="X"
+                            value={bgPaddingX}
+                            onChange={(v) => patchText({ bgPaddingX: v })}
+                            min={0}
+                            max={200}
+                            unit="px"
+                          />
+                          <ScrubbyNumberInput
+                            label="Y"
+                            value={bgPaddingY}
+                            onChange={(v) => patchText({ bgPaddingY: v })}
+                            min={0}
+                            max={200}
+                            unit="px"
+                          />
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
