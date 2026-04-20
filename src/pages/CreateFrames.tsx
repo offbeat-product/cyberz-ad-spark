@@ -770,7 +770,7 @@ const CreateFrames = () => {
                                 top: `${pos.y}%`,
                                 transform: `translate(${translateX}, ${translateY})`,
                                 color,
-                                fontFamily: font,
+                                fontFamily: `"${font}", sans-serif`,
                                 fontSize: fontSize,
                                 fontStyle: italic ? "italic" : "normal",
                                 paddingLeft: bgPaddingX >= 0 ? `${bgPaddingX}px` : 0,
