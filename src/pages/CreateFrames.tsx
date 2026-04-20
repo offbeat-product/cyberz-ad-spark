@@ -1036,6 +1036,14 @@ const CreateFrames = () => {
                   </Button>
                 </div>
 
+                <div className="flex items-center justify-between border-t border-border pt-3">
+                  <Label className="text-xs">斜体</Label>
+                  <Switch
+                    checked={italic}
+                    onCheckedChange={(v) => patchText({ italic: v })}
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs">テキスト</Label>
