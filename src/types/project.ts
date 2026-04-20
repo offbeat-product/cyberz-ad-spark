@@ -10,6 +10,20 @@ export type FrameMetadata = {
   transition: string;
 };
 
+export type CopyrightPosPreset =
+  | "top-left" | "top-center" | "top-right"
+  | "middle-left" | "middle-center" | "middle-right"
+  | "bottom-left" | "bottom-center" | "bottom-right";
+
+export type CopyrightSettings = {
+  show: boolean;
+  size: number;
+  font: string;
+  color: string;
+  pos: CopyrightPosPreset;
+  offset: { x: number; y: number };
+};
+
 export type SavedProject = {
   id: string;
   title: string;
@@ -23,6 +37,10 @@ export type SavedProject = {
   frames: FrameMetadata[];
   textSettings: TextSettings;
   exportSettings: ExportSettings;
+  /** ロゴ選択 ID（"none" or asset id）。古い保存データには無い場合あり。 */
+  logoId?: string;
+  /** コピーライト詳細設定。古い保存データには無い場合あり。 */
+  copyright?: CopyrightSettings;
 };
 
 export const stripFrameImages = (frames: FrameData[]): FrameMetadata[] =>
