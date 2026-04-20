@@ -961,6 +961,104 @@ const CreateFrames = () => {
                           unit="px"
                         />
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          pushHistory();
+                          setCopyrightOffset({ x: 0, y: 0 });
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-primary underline"
+                      >
+                        オフセットをリセット
+                      </button>
+                    </div>
+                  </>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* ④ Text settings */}
+            <AccordionItem value="text" className="border border-border rounded-md overflow-hidden bg-background">
+              <AccordionTrigger className="px-3 py-2 bg-muted/40 hover:bg-muted hover:no-underline">
+                <div className="flex-1 flex items-center justify-between gap-3 text-left">
+                  <span className="text-sm font-semibold">テキスト設定</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[140px]">
+                    {text ? (text.length > 10 ? text.slice(0, 10) + "…" : text) : "未入力"}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pt-3 space-y-5">
+                <div className="flex gap-2">
+                  <Button
+                    variant={!vertical ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => patchText({ vertical: false })}
+                    className="flex-1"
+                  >
+                    <AlignLeft /> 横書き
+                  </Button>
+                  <Button
+                    variant={vertical ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => patchText({ vertical: true })}
+                    className="flex-1"
+                  >
+                    <AlignCenter /> 縦書き
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">テキスト</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">テキストを表示</span>
+                      <Switch
+                        checked={textVisible}
+                        onCheckedChange={(v) => patchText({ visible: v })}
+                      />
+                    </div>
+                  </div>
+                  <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs">位置（プリセット）</Label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {gridPositions.map((g) => (
+                      <button
+                        key={g.label}
+                        onClick={() => patchText({ pos: { x: g.x, y: g.y } })}
+                        className={cn(
+                          "aspect-square rounded border text-[10px]",
+                          pos.x === g.x && pos.y === g.y
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background border-border hover:bg-muted",
+                        )}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <ScrubbyNumberInput
+                    label="X"
+                    value={pos.x}
+                    onChange={(nx) => patchText({ pos: { ...pos, x: nx } })}
+                    min={0}
+                    max={100}
+                    unit="%"
+                  />
+                  <ScrubbyNumberInput
+                    label="Y"
+                    value={pos.y}
+                    onChange={(ny) => patchText({ pos: { ...pos, y: ny } })}
+                    min={0}
+                    max={100}
+                    unit="%"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label className="text-xs">フォント</Label>
