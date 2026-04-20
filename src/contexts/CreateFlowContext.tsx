@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { SavedProject } from "@/types/project";
+import type { CopyrightSettings, SavedProject } from "@/types/project";
 import { restoreFramesFromMetadata, stripFrameImages } from "@/types/project";
 
 export interface FrameData {
