@@ -773,10 +773,14 @@ const CreateFrames = () => {
                                 fontFamily: font,
                                 fontSize: fontSize,
                                 fontStyle: italic ? "italic" : "normal",
-                                paddingLeft: `${bgPaddingX}px`,
-                                paddingRight: `${bgPaddingX}px`,
-                                paddingTop: `${bgPaddingY}px`,
-                                paddingBottom: `${bgPaddingY}px`,
+                                paddingLeft: bgPaddingX >= 0 ? `${bgPaddingX}px` : 0,
+                                paddingRight: bgPaddingX >= 0 ? `${bgPaddingX}px` : 0,
+                                marginLeft: bgPaddingX < 0 ? `${bgPaddingX}px` : 0,
+                                marginRight: bgPaddingX < 0 ? `${bgPaddingX}px` : 0,
+                                paddingTop: bgPaddingY >= 0 ? `${bgPaddingY}px` : 0,
+                                paddingBottom: bgPaddingY >= 0 ? `${bgPaddingY}px` : 0,
+                                marginTop: bgPaddingY < 0 ? `${bgPaddingY}px` : 0,
+                                marginBottom: bgPaddingY < 0 ? `${bgPaddingY}px` : 0,
                                 writingMode: vertical ? "vertical-rl" : "horizontal-tb",
                                 whiteSpace: "pre",
                                 WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "0 transparent",
@@ -1258,7 +1262,7 @@ const CreateFrames = () => {
                             label="X"
                             value={bgPaddingX}
                             onChange={(v) => patchText({ bgPaddingX: v })}
-                            min={0}
+                            min={-50}
                             max={200}
                             unit="px"
                           />
@@ -1266,7 +1270,7 @@ const CreateFrames = () => {
                             label="Y"
                             value={bgPaddingY}
                             onChange={(v) => patchText({ bgPaddingY: v })}
-                            min={0}
+                            min={-50}
                             max={200}
                             unit="px"
                           />
