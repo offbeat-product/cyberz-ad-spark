@@ -1135,7 +1135,7 @@ const CreateFrames = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {blendModes.map((b) => (
-                        <SelectItem key={b} value={b}>{b}</SelectItem>
+                        <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
