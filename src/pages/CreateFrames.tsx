@@ -204,6 +204,51 @@ const CreateFrames = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMaster?.id]);
 
+  // Restore logo & copyright settings when loading an existing project
+  const restoredProjectIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!currentProjectId) return;
+    if (restoredProjectIdRef.current === currentProjectId) return;
+    const project = getProject(currentProjectId);
+    if (!project) return;
+    restoredProjectIdRef.current = currentProjectId;
+    if (project.logoId !== undefined) setLogoId(project.logoId);
+    if (project.copyright) {
+      setShowCopyright(project.copyright.show);
+      setCopyrightSize(project.copyright.size);
+      setCopyrightFont(project.copyright.font);
+      setCopyrightColor(project.copyright.color);
+      setCopyrightPos(project.copyright.pos as CopyrightPos);
+      setCopyrightOffset(project.copyright.offset);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProjectId]);
+
+  // Register extras provider so saveAsDraft includes logoId & copyright
+  useEffect(() => {
+    registerExtrasProvider(() => ({
+      logoId,
+      copyright: {
+        show: showCopyright,
+        size: copyrightSize,
+        font: copyrightFont,
+        color: copyrightColor,
+        pos: copyrightPos,
+        offset: copyrightOffset,
+      },
+    }));
+    return () => registerExtrasProvider(null);
+  }, [
+    registerExtrasProvider,
+    logoId,
+    showCopyright,
+    copyrightSize,
+    copyrightFont,
+    copyrightColor,
+    copyrightPos,
+    copyrightOffset,
+  ]);
+
   const activeLogoAsset = logoId && logoId !== "none"
     ? availableLogos.find((l) => l.id === logoId)
     : undefined;
