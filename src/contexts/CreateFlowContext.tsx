@@ -130,6 +130,16 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
   const [exportSettings, setExportSettings] = useState<ExportSettings>(defaultExport);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
 
+  // Page-supplied provider for extra fields to persist (logoId, copyright)
+  const extrasProviderRef = useRef<
+    (() => { logoId?: string; copyright?: CopyrightSettings }) | null
+  >(null);
+  const registerExtrasProvider = useCallback<
+    CreateFlowContextValue["registerExtrasProvider"]
+  >((fn) => {
+    extrasProviderRef.current = fn;
+  }, []);
+
   // Refs to access latest state inside saveAsDraft without stale closures
   const stateRef = useRef({ basic, frames, textSettings, exportSettings, currentProjectId });
   stateRef.current = { basic, frames, textSettings, exportSettings, currentProjectId };
@@ -151,6 +161,7 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
 
     const all = readProjects();
     const existing = all.find((p) => p.id === id);
+    const extras = extrasProviderRef.current?.() ?? {};
     const project: SavedProject = {
       id,
       title: b.title || "（無題）",
@@ -164,6 +175,8 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
       frames: stripFrameImages(f),
       textSettings: t,
       exportSettings: e,
+      logoId: extras.logoId ?? existing?.logoId,
+      copyright: extras.copyright ?? existing?.copyright,
     };
     const next = existing
       ? all.map((p) => (p.id === id ? project : p))
@@ -197,6 +210,7 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
         currentProjectId, setCurrentProjectId,
         saveAsDraft, loadProject,
         reset,
+        registerExtrasProvider,
       }}
     >
       {children}
