@@ -115,6 +115,10 @@ interface CreateFlowContextValue {
   saveAsDraft: (opts?: { step?: 1 | 2 | 3; silent?: boolean; status?: "draft" | "exported" }) => string;
   loadProject: (id: string) => SavedProject | null;
   reset: () => void;
+  /** ページから「保存時に含めたい追加データの取得関数」を登録する */
+  registerExtrasProvider: (
+    fn: (() => { logoId?: string; copyright?: CopyrightSettings }) | null,
+  ) => void;
 }
 
 const CreateFlowContext = createContext<CreateFlowContextValue | null>(null);
