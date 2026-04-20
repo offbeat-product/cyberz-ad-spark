@@ -68,8 +68,6 @@ const ScrubbyNumberInput = ({
       </Label>
       <Input
         type="number"
-        min={min}
-        max={max}
         value={Math.round(value)}
         onChange={(e) => {
           const n = Number(e.target.value);
