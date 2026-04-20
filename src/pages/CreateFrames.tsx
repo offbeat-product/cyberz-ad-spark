@@ -696,7 +696,7 @@ const CreateFrames = () => {
                                 fontSize: fontSize,
                                 writingMode: vertical ? "vertical-rl" : "horizontal-tb",
                                 whiteSpace: "pre",
-                                WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "none",
+                                WebkitTextStroke: strokeEnabled ? `${strokeWidth}px ${strokeColor}` : "0 transparent",
                                 background: bgEnabled
                                   ? `${bgColor}${Math.round((bgOpacity / 100) * 255)
                                       .toString(16)
