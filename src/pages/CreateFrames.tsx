@@ -1112,25 +1112,33 @@ const CreateFrames = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-2 border-t border-border pt-4">
-                  <Label className="text-xs">枠線</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={strokeColor}
-                      onChange={(e) => patchText({ strokeColor: e.target.value })}
-                      className="h-9 w-14 rounded border border-border cursor-pointer"
+                <div className="space-y-3 border-t border-border pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">枠線</Label>
+                    <Switch
+                      checked={strokeEnabled}
+                      onCheckedChange={(v) => patchText({ strokeEnabled: v })}
                     />
-                    <Input
-                      type="number"
-                      value={strokeWidth}
-                      onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
-                      min={0}
-                      max={20}
-                      className="w-20"
-                    />
-                    <span className="text-xs text-muted-foreground">px</span>
                   </div>
+                  {strokeEnabled && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={strokeColor}
+                        onChange={(e) => patchText({ strokeColor: e.target.value })}
+                        className="h-9 w-14 rounded border border-border cursor-pointer"
+                      />
+                      <Input
+                        type="number"
+                        value={strokeWidth}
+                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
+                        min={1}
+                        max={20}
+                        className="w-20"
+                      />
+                      <span className="text-xs text-muted-foreground">px</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3 border-t border-border pt-4">
