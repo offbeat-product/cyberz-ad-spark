@@ -334,19 +334,39 @@ const CreateFrames = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Text settings shortcuts from context
+  // Selected frame's text settings (per-frame). Falls back to defaults if absent.
+  const selectedFrameForText = frames.find((f) => f.id === selectedId);
+  const textSettings: TextSettings =
+    selectedFrameForText?.textSettings ?? defaultText;
   const {
     visible: textVisible,
     vertical, italic, text, pos, font, fontSize, color, blend,
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
     bgPaddingX, bgPaddingY,
   } = textSettings;
-  const patchText = (patch: Partial<typeof textSettings>) =>
-    setTextSettings((p) => ({ ...p, ...patch }));
+  const patchText = (patch: Partial<TextSettings>) => {
+    if (!selectedId) return;
+    setFrames((prev) =>
+      prev.map((f) =>
+        f.id === selectedId
+          ? {
+              ...f,
+              textSettings: { ...(f.textSettings ?? defaultText), ...patch },
+            }
+          : f,
+      ),
+    );
+  };
 
   useEffect(() => {
     if (!selectedId && frames[0]) setSelectedId(frames[0].id);
   }, [frames, selectedId]);
+
+  // Sync selectedFrameIndex in context when selection changes
+  useEffect(() => {
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    if (idx >= 0 && idx !== selectedFrameIndex) setSelectedFrameIndex(idx);
+  }, [selectedId, frames, selectedFrameIndex, setSelectedFrameIndex]);
 
   const updateFrame = (id: string, patch: Partial<FrameData>) => {
     setFrames((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
