@@ -214,8 +214,32 @@ const CreateFrames = () => {
       setCopyrightSize(project.copyright.size);
       setCopyrightFont(project.copyright.font);
       setCopyrightColor(project.copyright.color);
-      setCopyrightPos(project.copyright.pos as CopyrightPos);
-      setCopyrightOffset(project.copyright.offset);
+      // 後方互換: 旧形式 (pos プリセット + offset) の場合は新座標系へ変換。
+      // 新形式 (pos なし) はそのまま offset を使用。
+      const legacyPos = project.copyright.pos;
+      const savedOffset = project.copyright.offset;
+      if (legacyPos) {
+        // 旧形式: プリセットからの top-left 座標 + offset を計算し、
+        // 新座標系 (左下原点・Y正=下方向) に変換する。
+        // 要素サイズは未測定の可能性があるため、現在値（既定 0）を使う。
+        // 測定後に若干ズレるが、再ドラッグ/再保存で正しい値に上書きされる。
+        const PRESET_PADDING = 8;
+        const { w, h } = copyrightSizeRef.current;
+        let bx = PRESET_PADDING;
+        if (legacyPos.endsWith("-center")) bx = (CANVAS_W - w) / 2;
+        else if (legacyPos.endsWith("-right")) bx = CANVAS_W - w - PRESET_PADDING;
+        let by = PRESET_PADDING;
+        if (legacyPos.startsWith("middle-")) by = (CANVAS_H - h) / 2;
+        else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
+        const topLeftX = bx + savedOffset.x;
+        const topLeftY = by + savedOffset.y;
+        // 新座標系へ変換: x はそのまま、y = topLeftY - (CANVAS_H - h)
+        setCopyrightOffset({ x: topLeftX, y: topLeftY - (CANVAS_H - h) });
+        // eslint-disable-next-line no-console
+        console.log("[migration] copyright pos+offset を新座標系へ変換しました");
+      } else {
+        setCopyrightOffset(savedOffset);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProjectId]);
@@ -229,7 +253,6 @@ const CreateFrames = () => {
         size: copyrightSize,
         font: copyrightFont,
         color: copyrightColor,
-        pos: copyrightPos,
         offset: copyrightOffset,
       },
     }));
@@ -241,7 +264,6 @@ const CreateFrames = () => {
     copyrightSize,
     copyrightFont,
     copyrightColor,
-    copyrightPos,
     copyrightOffset,
   ]);
 
@@ -280,17 +302,15 @@ const CreateFrames = () => {
   const undoCopyright = () => {
     const prev = undoStackRef.current.pop();
     if (!prev) return;
-    redoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    redoStackRef.current.push({ offset: copyrightOffset });
     if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-    setCopyrightPos(prev.pos);
     setCopyrightOffset(prev.offset);
   };
   const redoCopyright = () => {
     const next = redoStackRef.current.pop();
     if (!next) return;
-    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    undoStackRef.current.push({ offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    setCopyrightPos(next.pos);
     setCopyrightOffset(next.offset);
   };
 
