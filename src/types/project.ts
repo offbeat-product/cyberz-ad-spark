@@ -8,6 +8,8 @@ export type FrameMetadata = {
   display: number;
   transitionTime: number;
   transition: string;
+  /** Per-frame text settings. Optional for backward compatibility with old drafts. */
+  textSettings?: TextSettings;
 };
 
 export type CopyrightPosPreset =
@@ -35,7 +37,8 @@ export type SavedProject = {
   updatedAt: string;
   basic: BasicData;
   frames: FrameMetadata[];
-  textSettings: TextSettings;
+  /** @deprecated 旧形式: 作品単位のテキスト設定。新形式では frames[i].textSettings を使用。 */
+  textSettings?: TextSettings;
   exportSettings: ExportSettings;
   /** ロゴ選択 ID（"none" or asset id）。古い保存データには無い場合あり。 */
   logoId?: string;
@@ -50,6 +53,7 @@ export const stripFrameImages = (frames: FrameData[]): FrameMetadata[] =>
     display: f.display,
     transitionTime: f.transitionTime,
     transition: f.transition,
+    textSettings: f.textSettings,
   }));
 
 export const restoreFramesFromMetadata = (meta: FrameMetadata[]): FrameData[] =>
@@ -60,4 +64,5 @@ export const restoreFramesFromMetadata = (meta: FrameMetadata[]): FrameData[] =>
     transition: m.transition,
     image: null,
     name: m.fileName ?? undefined,
+    textSettings: m.textSettings,
   }));
