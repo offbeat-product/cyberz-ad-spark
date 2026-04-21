@@ -376,9 +376,14 @@ const CreateFrames = () => {
     const id = `f${Date.now()}`;
     setFrames((prev) => {
       const last = prev[prev.length - 1];
-      const inheritedText: TextSettings = last?.textSettings
+      const baseText = last?.textSettings
         ? structuredClone(last.textSettings)
         : structuredClone(defaultText);
+      const inheritedText: TextSettings = {
+        ...baseText,
+        visible: false,
+        text: "",
+      };
       return [
         ...prev,
         {
@@ -489,9 +494,14 @@ const CreateFrames = () => {
       const merged: FrameData[] = [...updated];
       for (const nf of newFrames) {
         const last = merged[merged.length - 1];
-        const inheritedText: TextSettings = last?.textSettings
+        const baseText = last?.textSettings
           ? structuredClone(last.textSettings)
           : structuredClone(defaultText);
+        const inheritedText: TextSettings = {
+          ...baseText,
+          visible: false,
+          text: "",
+        };
         merged.push({ ...nf, textSettings: inheritedText });
       }
       return merged;
