@@ -374,16 +374,23 @@ const CreateFrames = () => {
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => [
-      ...prev,
-      {
-        id,
-        display: mediaDefaults.display,
-        transitionTime: mediaDefaults.transitionTime,
-        transition: mediaDefaults.transition,
-        image: null,
-      },
-    ]);
+    setFrames((prev) => {
+      const last = prev[prev.length - 1];
+      const inheritedText: TextSettings = last?.textSettings
+        ? { ...last.textSettings }
+        : { ...defaultText };
+      return [
+        ...prev,
+        {
+          id,
+          display: mediaDefaults.display,
+          transitionTime: mediaDefaults.transitionTime,
+          transition: mediaDefaults.transition,
+          image: null,
+          textSettings: inheritedText,
+        },
+      ];
+    });
     setSelectedId(id);
   };
 
