@@ -878,7 +878,11 @@ const CreateFrames = () => {
                             canvasH={CANVAS_H}
                             scale={ratio}
                             onSizeChange={(w, h) => {
-                              copyrightSizeRef.current = { w, h };
+                              setCopyrightSize2((prev) =>
+                                Math.abs(prev.w - w) < 0.5 && Math.abs(prev.h - h) < 0.5
+                                  ? prev
+                                  : { w, h },
+                              );
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
