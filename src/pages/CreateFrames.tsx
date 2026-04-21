@@ -136,46 +136,30 @@ const CreateFrames = () => {
   const [showFrame, setShowFrame] = useState(true);
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(40);
-  type CopyrightPos =
-    | "top-left" | "top-center" | "top-right"
-    | "middle-left" | "middle-center" | "middle-right"
-    | "bottom-left" | "bottom-center" | "bottom-right";
   // Inner comic area is 1080 x 1350 px (canvas coords)
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
-  const PRESET_PADDING = 8;
-  // Position is stored as preset + offset; final coord = preset + offset
-  const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: -105 });
-  // Last measured element size in canvas px (kept in a ref for preset math)
+  // 新座標系: 左下原点・Y正=下方向（画像下端からグレー余白側へ）。
+  // 表示用 top-left canvas px 変換:
+  //   topLeftX = offset.x
+  //   topLeftY = (CANVAS_H - h) + offset.y
+  // デフォルト X=10, Y=80 → 画像下端より 80px 下のグレー余白に表示。
+  const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: 80 };
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
+  // Last measured element size in canvas px
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  // プリセット位置を計算（フォントサイズ＝要素サイズ変化に追従）
-  const computePresetCoord = (p: CopyrightPos) => {
-    const { w, h } = copyrightSizeRef.current;
-    // X: 左=パディング, 中央=中央寄せ, 右=右端パディング。
-    // 要素幅が CANVAS_W を超えるケースでも左/中央/右が区別できるよう、
-    // Math.max による下限クランプは行わない（負値を許可）。
-    let x = PRESET_PADDING;
-    if (p.endsWith("-center")) x = (CANVAS_W - w) / 2;
-    else if (p.endsWith("-right")) x = CANVAS_W - w - PRESET_PADDING;
-    let y = PRESET_PADDING;
-    if (p.startsWith("middle-")) y = (CANVAS_H - h) / 2;
-    else if (p.startsWith("bottom-")) y = CANVAS_H - h - PRESET_PADDING;
-    return { x, y };
-  };
-
-  // 最終表示座標 = プリセット位置 + オフセット
+  // 最終表示座標 (top-left canvas px)
   const copyrightCoord = (() => {
-    const base = computePresetCoord(copyrightPos);
-    return { x: base.x + copyrightOffset.x, y: base.y + copyrightOffset.y };
+    const { h } = copyrightSizeRef.current;
+    return { x: copyrightOffset.x, y: (CANVAS_H - h) + copyrightOffset.y };
   })();
 
-  // Undo/Redo: snapshot of {pos, offset}
-  const undoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
-  const redoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  // Undo/Redo: snapshot of {offset}
+  const undoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
+  const redoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
   const pushHistory = () => {
-    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    undoStackRef.current.push({ offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
   };
