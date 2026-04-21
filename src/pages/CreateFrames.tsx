@@ -146,14 +146,20 @@ const CreateFrames = () => {
   // デフォルト X=10, Y=80 → 画像下端より 80px 下のグレー余白に表示。
   const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: 80 };
   const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
-  // Last measured element size in canvas px
+  // Last measured element size in canvas px.
+  // state にして、サイズ変化時に再レンダーされ copyrightCoord が再計算されるようにする。
+  // （ref のままだと初回測定後に再レンダーが起きず、表示位置が古い h=0 で固定されてしまう）
+  const [copyrightSize2, setCopyrightSize2] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
+  copyrightSizeRef.current = copyrightSize2;
 
-  // 最終表示座標 (top-left canvas px)
-  const copyrightCoord = (() => {
-    const { h } = copyrightSizeRef.current;
-    return { x: copyrightOffset.x, y: (CANVAS_H - h) + copyrightOffset.y };
-  })();
+  // 最終表示座標 (top-left canvas px)。全 Y 値で単一の式（条件分岐なし）。
+  //   topLeftX = offset.x
+  //   topLeftY = (CANVAS_H - h) + offset.y
+  const copyrightCoord = {
+    x: copyrightOffset.x,
+    y: (CANVAS_H - copyrightSize2.h) + copyrightOffset.y,
+  };
 
   // Undo/Redo: snapshot of {offset}
   const undoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
