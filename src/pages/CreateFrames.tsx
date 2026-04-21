@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { useCreateFlow, defaultText, FrameData, TextSettings } from "@/contexts/CreateFlowContext";
 import { useProjects } from "@/hooks/useProjects";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
@@ -117,7 +117,16 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft, currentProjectId, registerExtrasProvider } = useCreateFlow();
+  const {
+    basic,
+    frames,
+    setFrames,
+    selectedFrameIndex,
+    setSelectedFrameIndex,
+    saveAsDraft,
+    currentProjectId,
+    registerExtrasProvider,
+  } = useCreateFlow();
   const { getProject } = useProjects();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
@@ -325,19 +334,39 @@ const CreateFrames = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Text settings shortcuts from context
+  // Selected frame's text settings (per-frame). Falls back to defaults if absent.
+  const selectedFrameForText = frames.find((f) => f.id === selectedId);
+  const textSettings: TextSettings =
+    selectedFrameForText?.textSettings ?? defaultText;
   const {
     visible: textVisible,
     vertical, italic, text, pos, font, fontSize, color, blend,
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
     bgPaddingX, bgPaddingY,
   } = textSettings;
-  const patchText = (patch: Partial<typeof textSettings>) =>
-    setTextSettings((p) => ({ ...p, ...patch }));
+  const patchText = (patch: Partial<TextSettings>) => {
+    if (!selectedId) return;
+    setFrames((prev) =>
+      prev.map((f) =>
+        f.id === selectedId
+          ? {
+              ...f,
+              textSettings: { ...(f.textSettings ?? defaultText), ...patch },
+            }
+          : f,
+      ),
+    );
+  };
 
   useEffect(() => {
     if (!selectedId && frames[0]) setSelectedId(frames[0].id);
   }, [frames, selectedId]);
+
+  // Sync selectedFrameIndex in context when selection changes
+  useEffect(() => {
+    const idx = frames.findIndex((f) => f.id === selectedId);
+    if (idx >= 0 && idx !== selectedFrameIndex) setSelectedFrameIndex(idx);
+  }, [selectedId, frames, selectedFrameIndex, setSelectedFrameIndex]);
 
   const updateFrame = (id: string, patch: Partial<FrameData>) => {
     setFrames((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
@@ -345,16 +374,23 @@ const CreateFrames = () => {
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => [
-      ...prev,
-      {
-        id,
-        display: mediaDefaults.display,
-        transitionTime: mediaDefaults.transitionTime,
-        transition: mediaDefaults.transition,
-        image: null,
-      },
-    ]);
+    setFrames((prev) => {
+      const last = prev[prev.length - 1];
+      const inheritedText: TextSettings = last?.textSettings
+        ? { ...last.textSettings }
+        : { ...defaultText };
+      return [
+        ...prev,
+        {
+          id,
+          display: mediaDefaults.display,
+          transitionTime: mediaDefaults.transitionTime,
+          transition: mediaDefaults.transition,
+          image: null,
+          textSettings: inheritedText,
+        },
+      ];
+    });
     setSelectedId(id);
   };
 
@@ -449,7 +485,16 @@ const CreateFrames = () => {
       const updated = prev.map((f) =>
         rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
       );
-      return [...updated, ...newFrames];
+      // Each newly added frame inherits text settings from the immediately-preceding frame
+      const merged: FrameData[] = [...updated];
+      for (const nf of newFrames) {
+        const last = merged[merged.length - 1];
+        const inheritedText: TextSettings = last?.textSettings
+          ? { ...last.textSettings }
+          : { ...defaultText };
+        merged.push({ ...nf, textSettings: inheritedText });
+      }
+      return merged;
     });
     if (newFrames.length > 0) setSelectedId(newFrames[0].id);
     setUploading(false);

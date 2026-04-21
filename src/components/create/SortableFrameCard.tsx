@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
+import { GripVertical, ChevronUp, ChevronDown, Trash2, Type } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -53,6 +53,9 @@ const SortableFrameCard = ({
   };
 
   const displayName = f.name ? truncate(f.name) : `コマ ${idx + 1}`;
+  const ts = f.textSettings;
+  const showTextIndicator = !!(ts && ts.visible && ts.text && ts.text.trim() !== "");
+  const textPreview = showTextIndicator ? truncate(ts!.text.trim(), 20) : "";
 
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -92,9 +95,20 @@ const SortableFrameCard = ({
 
         <div className="flex-1 space-y-3 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <span className="text-sm font-medium truncate" title={f.name ?? displayName}>
-              {displayName}
-            </span>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-sm font-medium truncate" title={f.name ?? displayName}>
+                {displayName}
+              </span>
+              {showTextIndicator && (
+                <span
+                  className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground truncate"
+                  title={ts!.text}
+                >
+                  <Type className="h-3 w-3 shrink-0 text-primary" />
+                  <span className="truncate">{textPreview}</span>
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-0.5 shrink-0">
               {idx > 0 && (
                 <button

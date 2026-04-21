@@ -10,6 +10,8 @@ export interface FrameData {
   transition: string;
   image?: string | null;
   name?: string;
+  /** Per-frame text settings. New frames inherit from previous frame; legacy drafts are migrated on load. */
+  textSettings?: TextSettings;
 }
 
 export interface BasicData {
@@ -51,7 +53,7 @@ export interface ExportSettings {
 
 const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
 
-const defaultText: TextSettings = {
+export const defaultText: TextSettings = {
   visible: true,
   vertical: false,
   italic: false,
@@ -106,8 +108,9 @@ interface CreateFlowContextValue {
   setBasic: (b: BasicData | ((prev: BasicData) => BasicData)) => void;
   frames: FrameData[];
   setFrames: (f: FrameData[] | ((prev: FrameData[]) => FrameData[])) => void;
-  textSettings: TextSettings;
-  setTextSettings: (t: TextSettings | ((prev: TextSettings) => TextSettings)) => void;
+  /** Index of the currently selected frame (kept in sync with the editor UI). */
+  selectedFrameIndex: number;
+  setSelectedFrameIndex: (i: number) => void;
   exportSettings: ExportSettings;
   setExportSettings: (e: ExportSettings | ((prev: ExportSettings) => ExportSettings)) => void;
   currentProjectId: string | null;
@@ -126,9 +129,9 @@ const CreateFlowContext = createContext<CreateFlowContextValue | null>(null);
 export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
   const [basic, setBasic] = useState<BasicData>(defaultBasic);
   const [frames, setFrames] = useState<FrameData[]>(defaultFrames);
-  const [textSettings, setTextSettings] = useState<TextSettings>(defaultText);
   const [exportSettings, setExportSettings] = useState<ExportSettings>(defaultExport);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [selectedFrameIndex, setSelectedFrameIndex] = useState<number>(0);
 
   // Page-supplied provider for extra fields to persist (logoId, copyright)
   const extrasProviderRef = useRef<
@@ -141,19 +144,19 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   // Refs to access latest state inside saveAsDraft without stale closures
-  const stateRef = useRef({ basic, frames, textSettings, exportSettings, currentProjectId });
-  stateRef.current = { basic, frames, textSettings, exportSettings, currentProjectId };
+  const stateRef = useRef({ basic, frames, exportSettings, currentProjectId });
+  stateRef.current = { basic, frames, exportSettings, currentProjectId };
 
   const reset = useCallback(() => {
     setBasic(defaultBasic);
     setFrames(defaultFrames);
-    setTextSettings(defaultText);
     setExportSettings(defaultExport);
     setCurrentProjectId(null);
+    setSelectedFrameIndex(0);
   }, []);
 
   const saveAsDraft = useCallback<CreateFlowContextValue["saveAsDraft"]>((opts) => {
-    const { basic: b, frames: f, textSettings: t, exportSettings: e, currentProjectId: cid } = stateRef.current;
+    const { basic: b, frames: f, exportSettings: e, currentProjectId: cid } = stateRef.current;
     const step = opts?.step ?? 1;
     const status = opts?.status ?? "draft";
     const id = cid ?? `proj-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -173,7 +176,6 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
       updatedAt: now,
       basic: b,
       frames: stripFrameImages(f),
-      textSettings: t,
       exportSettings: e,
       logoId: extras.logoId ?? existing?.logoId,
       copyright: extras.copyright ?? existing?.copyright,
@@ -193,10 +195,28 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
     const project = all.find((p) => p.id === id);
     if (!project) return null;
     setBasic(project.basic);
-    setFrames(restoreFramesFromMetadata(project.frames));
-    setTextSettings(project.textSettings);
+    let restored = restoreFramesFromMetadata(project.frames);
+    // 互換処理: 旧形式（作品単位 textSettings）を各コマに移行
+    const legacyText = project.textSettings;
+    const needsMigration =
+      !!legacyText && restored.some((fr) => !fr.textSettings);
+    if (needsMigration) {
+      restored = restored.map((fr) =>
+        fr.textSettings
+          ? fr
+          : { ...fr, textSettings: { ...legacyText!, visible: true } },
+      );
+      // eslint-disable-next-line no-console
+      console.log("[migration] textSettings を各コマに移行しました");
+    }
+    // 念のため: textSettings が無いコマにはデフォルトを補完
+    restored = restored.map((fr) =>
+      fr.textSettings ? fr : { ...fr, textSettings: { ...defaultText } },
+    );
+    setFrames(restored);
     setExportSettings(project.exportSettings);
     setCurrentProjectId(project.id);
+    setSelectedFrameIndex(0);
     return project;
   }, []);
 
@@ -205,7 +225,7 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
       value={{
         basic, setBasic,
         frames, setFrames,
-        textSettings, setTextSettings,
+        selectedFrameIndex, setSelectedFrameIndex,
         exportSettings, setExportSettings,
         currentProjectId, setCurrentProjectId,
         saveAsDraft, loadProject,
