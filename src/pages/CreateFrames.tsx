@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { useCreateFlow, FrameData } from "@/contexts/CreateFlowContext";
+import { useCreateFlow, defaultText, FrameData, TextSettings } from "@/contexts/CreateFlowContext";
 import { useProjects } from "@/hooks/useProjects";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
@@ -117,7 +117,16 @@ const readFileAsDataUrl = (file: File) =>
 
 const CreateFrames = () => {
   const navigate = useNavigate();
-  const { basic, frames, setFrames, textSettings, setTextSettings, saveAsDraft, currentProjectId, registerExtrasProvider } = useCreateFlow();
+  const {
+    basic,
+    frames,
+    setFrames,
+    selectedFrameIndex,
+    setSelectedFrameIndex,
+    saveAsDraft,
+    currentProjectId,
+    registerExtrasProvider,
+  } = useCreateFlow();
   const { getProject } = useProjects();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
   const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
