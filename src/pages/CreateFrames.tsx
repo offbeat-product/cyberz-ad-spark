@@ -146,19 +146,22 @@ const CreateFrames = () => {
   const PRESET_PADDING = 8;
   // Position is stored as preset + offset; final coord = preset + offset
   const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: 105 });
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: -105 });
   // Last measured element size in canvas px (kept in a ref for preset math)
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
   // プリセット位置を計算（フォントサイズ＝要素サイズ変化に追従）
   const computePresetCoord = (p: CopyrightPos) => {
     const { w, h } = copyrightSizeRef.current;
+    // X: 左=パディング, 中央=中央寄せ, 右=右端パディング。
+    // 要素幅が CANVAS_W を超えるケースでも左/中央/右が区別できるよう、
+    // Math.max による下限クランプは行わない（負値を許可）。
     let x = PRESET_PADDING;
-    if (p.endsWith("-center")) x = Math.max(0, (CANVAS_W - w) / 2);
-    else if (p.endsWith("-right")) x = Math.max(0, CANVAS_W - w - PRESET_PADDING);
+    if (p.endsWith("-center")) x = (CANVAS_W - w) / 2;
+    else if (p.endsWith("-right")) x = CANVAS_W - w - PRESET_PADDING;
     let y = PRESET_PADDING;
-    if (p.startsWith("middle-")) y = Math.max(0, (CANVAS_H - h) / 2);
-    else if (p.startsWith("bottom-")) y = Math.max(0, CANVAS_H - h - PRESET_PADDING);
+    if (p.startsWith("middle-")) y = (CANVAS_H - h) / 2;
+    else if (p.startsWith("bottom-")) y = CANVAS_H - h - PRESET_PADDING;
     return { x, y };
   };
 
