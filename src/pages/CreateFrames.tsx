@@ -485,7 +485,16 @@ const CreateFrames = () => {
       const updated = prev.map((f) =>
         rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
       );
-      return [...updated, ...newFrames];
+      // Each newly added frame inherits text settings from the immediately-preceding frame
+      const merged: FrameData[] = [...updated];
+      for (const nf of newFrames) {
+        const last = merged[merged.length - 1];
+        const inheritedText: TextSettings = last?.textSettings
+          ? { ...last.textSettings }
+          : { ...defaultText };
+        merged.push({ ...nf, textSettings: inheritedText });
+      }
+      return merged;
     });
     if (newFrames.length > 0) setSelectedId(newFrames[0].id);
     setUploading(false);
