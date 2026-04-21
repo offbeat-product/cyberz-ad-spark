@@ -377,8 +377,8 @@ const CreateFrames = () => {
     setFrames((prev) => {
       const last = prev[prev.length - 1];
       const inheritedText: TextSettings = last?.textSettings
-        ? { ...last.textSettings }
-        : { ...defaultText };
+        ? structuredClone(last.textSettings)
+        : structuredClone(defaultText);
       return [
         ...prev,
         {
@@ -490,8 +490,8 @@ const CreateFrames = () => {
       for (const nf of newFrames) {
         const last = merged[merged.length - 1];
         const inheritedText: TextSettings = last?.textSettings
-          ? { ...last.textSettings }
-          : { ...defaultText };
+          ? structuredClone(last.textSettings)
+          : structuredClone(defaultText);
         merged.push({ ...nf, textSettings: inheritedText });
       }
       return merged;

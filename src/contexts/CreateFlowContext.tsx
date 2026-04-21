@@ -204,14 +204,16 @@ export const CreateFlowProvider = ({ children }: { children: ReactNode }) => {
       restored = restored.map((fr) =>
         fr.textSettings
           ? fr
-          : { ...fr, textSettings: { ...legacyText!, visible: true } },
+          : { ...fr, textSettings: { ...structuredClone(legacyText!), visible: true } },
       );
+      // 旧プロパティを削除（二重管理防止）
+      delete (project as { textSettings?: TextSettings }).textSettings;
       // eslint-disable-next-line no-console
       console.log("[migration] textSettings を各コマに移行しました");
     }
     // 念のため: textSettings が無いコマにはデフォルトを補完
     restored = restored.map((fr) =>
-      fr.textSettings ? fr : { ...fr, textSettings: { ...defaultText } },
+      fr.textSettings ? fr : { ...fr, textSettings: structuredClone(defaultText) },
     );
     setFrames(restored);
     setExportSettings(project.exportSettings);
