@@ -384,8 +384,6 @@ const CreateFrames = () => {
         visible: false,
         text: "",
       };
-      // eslint-disable-next-line no-console
-      console.log("[debug] addFrame 新規コマのtextSettings:", inheritedText, "(prev last:", last?.textSettings, ")");
       return [
         ...prev,
         {
