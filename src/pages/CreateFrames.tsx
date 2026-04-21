@@ -1046,45 +1046,8 @@ const CreateFrames = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">位置（プリセット）</Label>
-                      <div className="grid grid-cols-3 gap-1">
-                        {([
-                          { id: "top-left", label: "左上" },
-                          { id: "top-center", label: "上" },
-                          { id: "top-right", label: "右上" },
-                          { id: "middle-left", label: "左" },
-                          { id: "middle-center", label: "中央" },
-                          { id: "middle-right", label: "右" },
-                          { id: "bottom-left", label: "左下" },
-                          { id: "bottom-center", label: "下" },
-                          { id: "bottom-right", label: "右下" },
-                        ] as const).map((p) => {
-                          const active = copyrightPos === p.id;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                pushHistory();
-                                setCopyrightPos(p.id);
-                                setCopyrightOffset({ x: 0, y: 0 });
-                              }}
-                              className={cn(
-                                "aspect-square rounded border text-[10px] transition-colors",
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background border-border text-muted-foreground hover:bg-muted",
-                              )}
-                            >
-                              {p.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
+                      <Label className="text-xs">位置（X: 左端からの距離 / Y: 画像下端より下方向が正）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <ScrubbyNumberInput
                           label="X"
@@ -1109,7 +1072,7 @@ const CreateFrames = () => {
                         type="button"
                         onClick={() => {
                           pushHistory();
-                          setCopyrightOffset({ x: 0, y: 0 });
+                          setCopyrightOffset(COPYRIGHT_DEFAULT_OFFSET);
                         }}
                         className="text-[10px] text-muted-foreground hover:text-primary underline"
                       >
