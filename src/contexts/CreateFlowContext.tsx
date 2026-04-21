@@ -10,6 +10,8 @@ export interface FrameData {
   transition: string;
   image?: string | null;
   name?: string;
+  /** Per-frame text settings. New frames inherit from previous frame; legacy drafts are migrated on load. */
+  textSettings?: TextSettings;
 }
 
 export interface BasicData {
@@ -51,7 +53,7 @@ export interface ExportSettings {
 
 const defaultBasic: BasicData = { title: "", mediaId: "", media: "", copyright: "" };
 
-const defaultText: TextSettings = {
+export const defaultText: TextSettings = {
   visible: true,
   vertical: false,
   italic: false,
