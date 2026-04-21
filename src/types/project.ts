@@ -12,6 +12,7 @@ export type FrameMetadata = {
   textSettings?: TextSettings;
 };
 
+/** @deprecated 新形式ではプリセット位置は廃止。読み込み時の後方互換のみで参照。 */
 export type CopyrightPosPreset =
   | "top-left" | "top-center" | "top-right"
   | "middle-left" | "middle-center" | "middle-right"
@@ -22,8 +23,13 @@ export type CopyrightSettings = {
   size: number;
   font: string;
   color: string;
-  pos: CopyrightPosPreset;
+  /**
+   * 新座標系: 左下原点・Y正=下方向（画像下端からグレー余白側へ）。
+   * 旧形式ではプリセット位置からの delta（`pos` と併用）。読み込み時に新座標系へ変換される。
+   */
   offset: { x: number; y: number };
+  /** @deprecated 旧形式: プリセット位置。新形式では使用せず、読み込み時に offset へ統合される。 */
+  pos?: CopyrightPosPreset;
 };
 
 export type SavedProject = {
