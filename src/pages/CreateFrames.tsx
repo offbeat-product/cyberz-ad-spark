@@ -136,46 +136,30 @@ const CreateFrames = () => {
   const [showFrame, setShowFrame] = useState(true);
   const [showCopyright, setShowCopyright] = useState(true);
   const [copyrightSize, setCopyrightSize] = useState(40);
-  type CopyrightPos =
-    | "top-left" | "top-center" | "top-right"
-    | "middle-left" | "middle-center" | "middle-right"
-    | "bottom-left" | "bottom-center" | "bottom-right";
   // Inner comic area is 1080 x 1350 px (canvas coords)
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
-  const PRESET_PADDING = 8;
-  // Position is stored as preset + offset; final coord = preset + offset
-  const [copyrightPos, setCopyrightPos] = useState<CopyrightPos>("bottom-left");
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>({ x: 15, y: -105 });
-  // Last measured element size in canvas px (kept in a ref for preset math)
+  // 新座標系: 左下原点・Y正=下方向（画像下端からグレー余白側へ）。
+  // 表示用 top-left canvas px 変換:
+  //   topLeftX = offset.x
+  //   topLeftY = (CANVAS_H - h) + offset.y
+  // デフォルト X=10, Y=80 → 画像下端より 80px 下のグレー余白に表示。
+  const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: 80 };
+  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
+  // Last measured element size in canvas px
   const copyrightSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
-  // プリセット位置を計算（フォントサイズ＝要素サイズ変化に追従）
-  const computePresetCoord = (p: CopyrightPos) => {
-    const { w, h } = copyrightSizeRef.current;
-    // X: 左=パディング, 中央=中央寄せ, 右=右端パディング。
-    // 要素幅が CANVAS_W を超えるケースでも左/中央/右が区別できるよう、
-    // Math.max による下限クランプは行わない（負値を許可）。
-    let x = PRESET_PADDING;
-    if (p.endsWith("-center")) x = (CANVAS_W - w) / 2;
-    else if (p.endsWith("-right")) x = CANVAS_W - w - PRESET_PADDING;
-    let y = PRESET_PADDING;
-    if (p.startsWith("middle-")) y = (CANVAS_H - h) / 2;
-    else if (p.startsWith("bottom-")) y = CANVAS_H - h - PRESET_PADDING;
-    return { x, y };
-  };
-
-  // 最終表示座標 = プリセット位置 + オフセット
+  // 最終表示座標 (top-left canvas px)
   const copyrightCoord = (() => {
-    const base = computePresetCoord(copyrightPos);
-    return { x: base.x + copyrightOffset.x, y: base.y + copyrightOffset.y };
+    const { h } = copyrightSizeRef.current;
+    return { x: copyrightOffset.x, y: (CANVAS_H - h) + copyrightOffset.y };
   })();
 
-  // Undo/Redo: snapshot of {pos, offset}
-  const undoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
-  const redoStackRef = useRef<{ pos: CopyrightPos; offset: { x: number; y: number } }[]>([]);
+  // Undo/Redo: snapshot of {offset}
+  const undoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
+  const redoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
   const pushHistory = () => {
-    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    undoStackRef.current.push({ offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
     redoStackRef.current = [];
   };
@@ -230,8 +214,32 @@ const CreateFrames = () => {
       setCopyrightSize(project.copyright.size);
       setCopyrightFont(project.copyright.font);
       setCopyrightColor(project.copyright.color);
-      setCopyrightPos(project.copyright.pos as CopyrightPos);
-      setCopyrightOffset(project.copyright.offset);
+      // 後方互換: 旧形式 (pos プリセット + offset) の場合は新座標系へ変換。
+      // 新形式 (pos なし) はそのまま offset を使用。
+      const legacyPos = project.copyright.pos;
+      const savedOffset = project.copyright.offset;
+      if (legacyPos) {
+        // 旧形式: プリセットからの top-left 座標 + offset を計算し、
+        // 新座標系 (左下原点・Y正=下方向) に変換する。
+        // 要素サイズは未測定の可能性があるため、現在値（既定 0）を使う。
+        // 測定後に若干ズレるが、再ドラッグ/再保存で正しい値に上書きされる。
+        const PRESET_PADDING = 8;
+        const { w, h } = copyrightSizeRef.current;
+        let bx = PRESET_PADDING;
+        if (legacyPos.endsWith("-center")) bx = (CANVAS_W - w) / 2;
+        else if (legacyPos.endsWith("-right")) bx = CANVAS_W - w - PRESET_PADDING;
+        let by = PRESET_PADDING;
+        if (legacyPos.startsWith("middle-")) by = (CANVAS_H - h) / 2;
+        else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
+        const topLeftX = bx + savedOffset.x;
+        const topLeftY = by + savedOffset.y;
+        // 新座標系へ変換: x はそのまま、y = topLeftY - (CANVAS_H - h)
+        setCopyrightOffset({ x: topLeftX, y: topLeftY - (CANVAS_H - h) });
+        // eslint-disable-next-line no-console
+        console.log("[migration] copyright pos+offset を新座標系へ変換しました");
+      } else {
+        setCopyrightOffset(savedOffset);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProjectId]);
@@ -245,7 +253,6 @@ const CreateFrames = () => {
         size: copyrightSize,
         font: copyrightFont,
         color: copyrightColor,
-        pos: copyrightPos,
         offset: copyrightOffset,
       },
     }));
@@ -257,7 +264,6 @@ const CreateFrames = () => {
     copyrightSize,
     copyrightFont,
     copyrightColor,
-    copyrightPos,
     copyrightOffset,
   ]);
 
@@ -296,17 +302,15 @@ const CreateFrames = () => {
   const undoCopyright = () => {
     const prev = undoStackRef.current.pop();
     if (!prev) return;
-    redoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    redoStackRef.current.push({ offset: copyrightOffset });
     if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-    setCopyrightPos(prev.pos);
     setCopyrightOffset(prev.offset);
   };
   const redoCopyright = () => {
     const next = redoStackRef.current.pop();
     if (!next) return;
-    undoStackRef.current.push({ pos: copyrightPos, offset: copyrightOffset });
+    undoStackRef.current.push({ offset: copyrightOffset });
     if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    setCopyrightPos(next.pos);
     setCopyrightOffset(next.offset);
   };
 
@@ -872,10 +876,12 @@ const CreateFrames = () => {
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
-                              const base = computePresetCoord(copyrightPos);
+                              // 新座標系へ変換: (nx, ny) は top-left canvas px。
+                              //   x = nx, y = ny - (CANVAS_H - h)
+                              const { h } = copyrightSizeRef.current;
                               setCopyrightOffset({
-                                x: nx - base.x,
-                                y: ny - base.y,
+                                x: nx,
+                                y: ny - (CANVAS_H - h),
                               });
                             }}
                           />
@@ -1040,45 +1046,8 @@ const CreateFrames = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">位置（プリセット）</Label>
-                      <div className="grid grid-cols-3 gap-1">
-                        {([
-                          { id: "top-left", label: "左上" },
-                          { id: "top-center", label: "上" },
-                          { id: "top-right", label: "右上" },
-                          { id: "middle-left", label: "左" },
-                          { id: "middle-center", label: "中央" },
-                          { id: "middle-right", label: "右" },
-                          { id: "bottom-left", label: "左下" },
-                          { id: "bottom-center", label: "下" },
-                          { id: "bottom-right", label: "右下" },
-                        ] as const).map((p) => {
-                          const active = copyrightPos === p.id;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                pushHistory();
-                                setCopyrightPos(p.id);
-                                setCopyrightOffset({ x: 0, y: 0 });
-                              }}
-                              className={cn(
-                                "aspect-square rounded border text-[10px] transition-colors",
-                                active
-                                  ? "bg-primary text-primary-foreground border-primary"
-                                  : "bg-background border-border text-muted-foreground hover:bg-muted",
-                              )}
-                            >
-                              {p.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
                     <div className="space-y-2">
-                      <Label className="text-xs">微調整（プリセットからのオフセット）</Label>
+                      <Label className="text-xs">位置（X: 左端からの距離 / Y: 画像下端より下方向が正）</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <ScrubbyNumberInput
                           label="X"
@@ -1103,7 +1072,7 @@ const CreateFrames = () => {
                         type="button"
                         onClick={() => {
                           pushHistory();
-                          setCopyrightOffset({ x: 0, y: 0 });
+                          setCopyrightOffset(COPYRIGHT_DEFAULT_OFFSET);
                         }}
                         className="text-[10px] text-muted-foreground hover:text-primary underline"
                       >
