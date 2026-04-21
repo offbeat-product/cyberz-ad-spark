@@ -108,8 +108,9 @@ interface CreateFlowContextValue {
   setBasic: (b: BasicData | ((prev: BasicData) => BasicData)) => void;
   frames: FrameData[];
   setFrames: (f: FrameData[] | ((prev: FrameData[]) => FrameData[])) => void;
-  textSettings: TextSettings;
-  setTextSettings: (t: TextSettings | ((prev: TextSettings) => TextSettings)) => void;
+  /** Index of the currently selected frame (kept in sync with the editor UI). */
+  selectedFrameIndex: number;
+  setSelectedFrameIndex: (i: number) => void;
   exportSettings: ExportSettings;
   setExportSettings: (e: ExportSettings | ((prev: ExportSettings) => ExportSettings)) => void;
   currentProjectId: string | null;
