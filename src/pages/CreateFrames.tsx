@@ -130,13 +130,7 @@ const CreateFrames = () => {
   } = useCreateFlow();
   const { getProject } = useProjects();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
-  const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
-
-  // Layer visibility / logo selection
-  const [showFrame, setShowFrame] = useState(true);
-  const [showCopyright, setShowCopyright] = useState(true);
-  const [copyrightSize, setCopyrightSize] = useState(40);
   // Inner comic area is 1080 x 1350 px (canvas coords)
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
@@ -146,7 +140,113 @@ const CreateFrames = () => {
   //   topLeftY = (CANVAS_H - h) + offset.y
   // デフォルト X=10, Y=-24 → 画像下端から24px上の位置に表示。
   const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: -24 };
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
+
+  // ============================================================
+  // 統一 Undo/Redo 履歴: アプリスナップショット
+  //   - frames（テキスト設定もここに含む）
+  //   - コピーライト設定一式
+  //   - logoId / showFrame / selectedId
+  //   履歴対象外: basic / 画像アップロード / 保存・書き出し / previewSize
+  // ============================================================
+  type Snap = {
+    frames: FrameData[];
+    copyrightOffset: { x: number; y: number };
+    copyrightSize: number;
+    copyrightFont: string;
+    copyrightColor: string;
+    showCopyright: boolean;
+    logoId: string;
+    showFrame: boolean;
+    selectedId: string;
+  };
+  const initialSnap: Snap = {
+    frames,
+    copyrightOffset: COPYRIGHT_DEFAULT_OFFSET,
+    copyrightSize: 40,
+    copyrightFont: "Noto Sans JP",
+    copyrightColor: "#000000",
+    showCopyright: true,
+    logoId: "",
+    showFrame: true,
+    selectedId: frames[0]?.id ?? "",
+  };
+  const history = useAppHistory<Snap>(initialSnap);
+  const snap = history.state;
+  const {
+    copyrightOffset,
+    copyrightSize,
+    copyrightFont,
+    copyrightColor,
+    showCopyright,
+    logoId,
+    showFrame,
+    selectedId,
+  } = snap;
+
+  // ---- 履歴経由 setter (commit options 付き) ----
+  const setSnap = history.set;
+  const replaceSnap = history.replace;
+
+  const setCopyrightOffset = (
+    next: { x: number; y: number } | ((p: { x: number; y: number }) => { x: number; y: number }),
+    opts?: Parameters<typeof setSnap>[1],
+  ) => {
+    setSnap((s) => ({
+      ...s,
+      copyrightOffset:
+        typeof next === "function" ? (next as (p: typeof s.copyrightOffset) => typeof s.copyrightOffset)(s.copyrightOffset) : next,
+    }), opts);
+  };
+  const setCopyrightSize = (n: number) =>
+    setSnap((s) => ({ ...s, copyrightSize: n }), { coalesceKey: "copyrightSize" });
+  const setCopyrightFont = (v: string) =>
+    setSnap((s) => ({ ...s, copyrightFont: v }));
+  const setCopyrightColor = (v: string) =>
+    setSnap((s) => ({ ...s, copyrightColor: v }), { coalesceKey: "copyrightColor" });
+  const setShowCopyright = (v: boolean) =>
+    setSnap((s) => ({ ...s, showCopyright: v }));
+  const setLogoId = (v: string) => setSnap((s) => ({ ...s, logoId: v }));
+  const setShowFrame = (v: boolean) => setSnap((s) => ({ ...s, showFrame: v }));
+  const setSelectedId = (id: string) =>
+    // 選択切替は履歴に積まない（コマ跨ぎでもUndoは時系列のまま）
+    replaceSnap((s) => ({ ...s, selectedId: id }));
+
+  /** frames を履歴付きで更新する（テキスト設定・順序・追加・削除など） */
+  const updateFramesHistory = (
+    next: FrameData[] | ((prev: FrameData[]) => FrameData[]),
+    opts?: Parameters<typeof setSnap>[1],
+  ) => {
+    setSnap((s) => ({
+      ...s,
+      frames: typeof next === "function" ? (next as (p: FrameData[]) => FrameData[])(s.frames) : next,
+    }), opts);
+  };
+
+  /** frames を履歴に積まずに置き換える（画像アップロード・下書き読込み等） */
+  const replaceFrames = (
+    next: FrameData[] | ((prev: FrameData[]) => FrameData[]),
+  ) => {
+    replaceSnap((s) => ({
+      ...s,
+      frames: typeof next === "function" ? (next as (p: FrameData[]) => FrameData[])(s.frames) : next,
+    }));
+  };
+
+  // 履歴 state の frames を context へ常に同期（保存・書き出し等が context を参照するため）
+  useEffect(() => {
+    setFrames(snap.frames);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap.frames]);
+
+  // context 側の frames が外部要因で変化した場合（読み込み等）は履歴側に反映
+  // ※ replace を使うので履歴はクリアされない。深い等価で無限ループ回避。
+  useEffect(() => {
+    if (frames !== snap.frames) {
+      replaceSnap((s) => ({ ...s, frames }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames]);
+
   // Last measured element size in canvas px.
   // state にして、サイズ変化時に再レンダーされ copyrightCoord が再計算されるようにする。
   // （ref のままだと初回測定後に再レンダーが起きず、表示位置が古い h=0 で固定されてしまう）
@@ -166,18 +266,6 @@ const CreateFrames = () => {
     x: copyrightOffset.x,
     y: CANVAS_H + copyrightOffset.y - copyrightSize,
   };
-
-  // Undo/Redo: snapshot of {offset}
-  const undoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
-  const redoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
-  const pushHistory = () => {
-    undoStackRef.current.push({ offset: copyrightOffset });
-    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    redoStackRef.current = [];
-  };
-  const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
-  const [copyrightColor, setCopyrightColor] = useState("#000000");
-  const [logoId, setLogoId] = useState<string>("");
 
   // Resolve defaults from the selected media master (matched by id)
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
