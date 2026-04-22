@@ -116,6 +116,7 @@ const CopyrightDraggable = ({
         color,
         fontFamily: `"${font}", sans-serif`,
         fontSize,
+        lineHeight: 1,
         textShadow: "0 1px 2px rgba(0,0,0,0.6)",
         touchAction: "none",
       }}
