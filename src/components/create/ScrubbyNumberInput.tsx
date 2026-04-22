@@ -8,6 +8,7 @@ interface ScrubbyNumberInputProps {
   value: number;
   onChange: (value: number) => void;
   onDragStart?: () => void;
+  onDragEnd?: () => void;
   min?: number;
   max?: number;
   step?: number;
@@ -26,6 +27,7 @@ const ScrubbyNumberInput = ({
   value,
   onChange,
   onDragStart,
+  onDragEnd,
   min = -500,
   max = 500,
   step = 1,
@@ -53,6 +55,7 @@ const ScrubbyNumberInput = ({
       document.body.style.cursor = "";
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      onDragEnd?.();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
