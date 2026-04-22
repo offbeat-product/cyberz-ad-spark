@@ -303,28 +303,38 @@ const CreateFrames = () => {
   // Restore logo & copyright settings when loading an existing project
   const restoredProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!currentProjectId) return;
+  useEffect(() => {
+    if (!currentProjectId) {
+      // 新規案件 = 履歴クリア
+      if (restoredProjectIdRef.current !== null) {
+        restoredProjectIdRef.current = null;
+        history.clear();
+      }
+      return;
+    }
     if (restoredProjectIdRef.current === currentProjectId) return;
     const project = getProject(currentProjectId);
     if (!project) return;
     restoredProjectIdRef.current = currentProjectId;
-    if (project.logoId !== undefined) setLogoId(project.logoId);
+
+    // 案件切り替え時は履歴をクリアし、復元値で初期スナップショットを再構築する。
+    // 各 setter を個別に呼ぶと履歴に積まれてしまうため、replace で一括差し替える。
+    let nextOffset = COPYRIGHT_DEFAULT_OFFSET;
+    let nextShow = true;
+    let nextSize = 40;
+    let nextFont = "Noto Sans JP";
+    let nextColor = "#000000";
     if (project.copyright) {
-      setShowCopyright(project.copyright.show);
-      setCopyrightSize(project.copyright.size);
-      setCopyrightFont(project.copyright.font);
-      setCopyrightColor(project.copyright.color);
-      // 後方互換: 旧形式 (pos プリセット + offset) の場合は新座標系へ変換。
-      // 新形式 (pos なし) はそのまま offset を使用。
+      nextShow = project.copyright.show;
+      nextSize = project.copyright.size;
+      nextFont = project.copyright.font;
+      nextColor = project.copyright.color;
       const legacyPos = project.copyright.pos;
       const savedOffset = project.copyright.offset;
       if (legacyPos) {
-        // 旧形式: プリセットからの top-left 座標 + offset を計算し、
-        // 新座標系 (左下原点・Y正=下方向、左下端アンカー) に変換する。
-        // 要素サイズは未測定の可能性があるため、fontSize を高さの近似として使う。
         const PRESET_PADDING = 8;
         const w = copyrightSizeRef.current.w;
-        const h = project.copyright.size; // line-height: 1 前提で fontSize ≒ 高さ
+        const h = project.copyright.size;
         let bx = PRESET_PADDING;
         if (legacyPos.endsWith("-center")) bx = (CANVAS_W - w) / 2;
         else if (legacyPos.endsWith("-right")) bx = CANVAS_W - w - PRESET_PADDING;
@@ -333,15 +343,23 @@ const CreateFrames = () => {
         else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
         const topLeftX = bx + savedOffset.x;
         const topLeftY = by + savedOffset.y;
-        // 新座標系（左下端基準）へ変換:
-        //   左下端y = topLeftY + h, offset.y = 左下端y - CANVAS_H
-        setCopyrightOffset({ x: topLeftX, y: topLeftY + h - CANVAS_H });
+        nextOffset = { x: topLeftX, y: topLeftY + h - CANVAS_H };
         // eslint-disable-next-line no-console
         console.log("[migration] copyright pos+offset を新座標系へ変換しました");
       } else {
-        setCopyrightOffset(savedOffset);
+        nextOffset = savedOffset;
       }
     }
+    history.clear();
+    replaceSnap((s) => ({
+      ...s,
+      logoId: project.logoId !== undefined ? project.logoId : s.logoId,
+      copyrightOffset: nextOffset,
+      copyrightSize: nextSize,
+      copyrightFont: nextFont,
+      copyrightColor: nextColor,
+      showCopyright: nextShow,
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProjectId]);
 
