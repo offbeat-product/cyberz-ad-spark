@@ -241,8 +241,9 @@ const CreateFrames = () => {
         else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
         const topLeftX = bx + savedOffset.x;
         const topLeftY = by + savedOffset.y;
-        // 新座標系へ変換: x はそのまま、y = topLeftY - (CANVAS_H - h)
-        setCopyrightOffset({ x: topLeftX, y: topLeftY - (CANVAS_H - h) });
+        // 新座標系（下端基準）へ変換:
+        //   下端 = topLeftY + h, offset.y = 下端 - CANVAS_H = topLeftY + h - CANVAS_H
+        setCopyrightOffset({ x: topLeftX, y: topLeftY + h - CANVAS_H });
         // eslint-disable-next-line no-console
         console.log("[migration] copyright pos+offset を新座標系へ変換しました");
       } else {
