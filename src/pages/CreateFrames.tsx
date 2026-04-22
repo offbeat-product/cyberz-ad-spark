@@ -143,8 +143,8 @@ const CreateFrames = () => {
   // 表示用 top-left canvas px 変換:
   //   topLeftX = offset.x
   //   topLeftY = (CANVAS_H - h) + offset.y
-  // デフォルト X=10, Y=80 → 画像下端より 80px 下のグレー余白に表示。
-  const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: 80 };
+  // デフォルト X=10, Y=-24 → 画像下端から24px上の位置に表示。
+  const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: -24 };
   const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
   // Last measured element size in canvas px.
   // state にして、サイズ変化時に再レンダーされ copyrightCoord が再計算されるようにする。
