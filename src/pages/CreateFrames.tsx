@@ -889,12 +889,12 @@ const CreateFrames = () => {
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
-                              // 新座標系へ変換: (nx, ny) は top-left canvas px。
-                              //   x = nx, y = ny - (CANVAS_H - h)
+                              // 下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
+                              //   下端 = ny + h, offset.y = 下端 - CANVAS_H = ny + h - CANVAS_H
                               const { h } = copyrightSizeRef.current;
                               setCopyrightOffset({
                                 x: nx,
-                                y: ny - (CANVAS_H - h),
+                                y: ny + h - CANVAS_H,
                               });
                             }}
                           />
