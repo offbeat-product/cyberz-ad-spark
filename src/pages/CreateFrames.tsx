@@ -303,7 +303,6 @@ const CreateFrames = () => {
   // Restore logo & copyright settings when loading an existing project
   const restoredProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
-  useEffect(() => {
     if (!currentProjectId) {
       // 新規案件 = 履歴クリア
       if (restoredProjectIdRef.current !== null) {
