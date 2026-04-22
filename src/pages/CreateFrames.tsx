@@ -156,11 +156,14 @@ const CreateFrames = () => {
   // 最終表示座標 (top-left canvas px)。全 Y 値で単一の式（条件分岐なし）。
   // 基準は「要素の下端」: 下端 = CANVAS_H + offset.y
   //   topLeftX = offset.x
-  //   topLeftY = CANVAS_H + offset.y - h
-  // → フォントサイズで h が変化しても下端位置は offset.y に固定される。
+  //   topLeftY = CANVAS_H + offset.y - fontSize
+  // アンカーポイントはテキスト「左下端」。CopyrightDraggable 側で line-height: 1 を
+  // 強制しているため、要素高さ ≒ fontSize となる。h(実測) ではなく fontSize を直接
+  // 使うことで、ブラウザのフォントメトリクス差や測定タイミングに左右されず、
+  // フォントサイズ変更時も左下端が完全に固定される。
   const copyrightCoord = {
     x: copyrightOffset.x,
-    y: CANVAS_H + copyrightOffset.y - copyrightSize2.h,
+    y: CANVAS_H + copyrightOffset.y - copyrightSize,
   };
 
   // Undo/Redo: snapshot of {offset}
