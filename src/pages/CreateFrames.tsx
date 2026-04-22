@@ -980,10 +980,10 @@ const CreateFrames = () => {
                               // 左下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
                               //   左下端 = (nx, ny + fontSize)
                               //   offset.y = 左下端y - CANVAS_H = ny + fontSize - CANVAS_H
-                              setCopyrightOffset(
-                                { x: nx, y: ny + copyrightSize - CANVAS_H },
-                                { transient: true },
-                              );
+                              setCopyrightOffset({
+                                x: nx,
+                                y: ny + copyrightSize - CANVAS_H,
+                              });
                             }}
                           />
                         )}
@@ -1153,8 +1153,11 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="X"
                           value={copyrightOffset.x}
-                          onChange={(nx) =>
-                            setCopyrightOffset((prev) => ({ ...prev, x: nx }), { transient: true })
+                          onChange={(nx, meta) =>
+                            setCopyrightOffset(
+                              (prev) => ({ ...prev, x: nx }),
+                              meta?.source === "input" ? { coalesceKey: "copyrightOffset.x" } : undefined,
+                            )
                           }
                           onDragStart={() => history.beginScrub()}
                           onDragEnd={() => history.endScrub()}
@@ -1165,8 +1168,11 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="Y"
                           value={copyrightOffset.y}
-                          onChange={(ny) =>
-                            setCopyrightOffset((prev) => ({ ...prev, y: ny }), { transient: true })
+                          onChange={(ny, meta) =>
+                            setCopyrightOffset(
+                              (prev) => ({ ...prev, y: ny }),
+                              meta?.source === "input" ? { coalesceKey: "copyrightOffset.y" } : undefined,
+                            )
                           }
                           onDragStart={() => history.beginScrub()}
                           onDragEnd={() => history.endScrub()}
