@@ -15,6 +15,7 @@ interface Props {
   onSizeChange: (wCanvasPx: number, hCanvasPx: number) => void;
   onDragStart: () => void;
   onDrag: (xCanvasPx: number, yCanvasPx: number) => void;
+  onDragEnd?: () => void;
 }
 
 /**
@@ -35,6 +36,7 @@ const CopyrightDraggable = ({
   onSizeChange,
   onDragStart,
   onDrag,
+  onDragEnd,
 }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const lastSizeRef = useRef<{ w: number; h: number }>({ w: -1, h: -1 });
@@ -100,6 +102,7 @@ const CopyrightDraggable = ({
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      onDragEnd?.();
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);

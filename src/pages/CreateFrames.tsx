@@ -52,6 +52,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
 import { toast } from "sonner";
+import { useAppHistory } from "@/hooks/useAppHistory";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
@@ -129,13 +130,7 @@ const CreateFrames = () => {
   } = useCreateFlow();
   const { getProject } = useProjects();
   const { media, frames: masterFrames, logos: masterLogos } = useMediaMasters();
-  const [selectedId, setSelectedId] = useState<string>(frames[0]?.id ?? "");
   const [previewSize, setPreviewSize] = useState<"main" | "vertical" | "square">("main");
-
-  // Layer visibility / logo selection
-  const [showFrame, setShowFrame] = useState(true);
-  const [showCopyright, setShowCopyright] = useState(true);
-  const [copyrightSize, setCopyrightSize] = useState(40);
   // Inner comic area is 1080 x 1350 px (canvas coords)
   const CANVAS_W = 1080;
   const CANVAS_H = 1350;
@@ -145,7 +140,113 @@ const CreateFrames = () => {
   //   topLeftY = (CANVAS_H - h) + offset.y
   // デフォルト X=10, Y=-24 → 画像下端から24px上の位置に表示。
   const COPYRIGHT_DEFAULT_OFFSET = { x: 10, y: -24 };
-  const [copyrightOffset, setCopyrightOffset] = useState<{ x: number; y: number }>(COPYRIGHT_DEFAULT_OFFSET);
+
+  // ============================================================
+  // 統一 Undo/Redo 履歴: アプリスナップショット
+  //   - frames（テキスト設定もここに含む）
+  //   - コピーライト設定一式
+  //   - logoId / showFrame / selectedId
+  //   履歴対象外: basic / 画像アップロード / 保存・書き出し / previewSize
+  // ============================================================
+  type Snap = {
+    frames: FrameData[];
+    copyrightOffset: { x: number; y: number };
+    copyrightSize: number;
+    copyrightFont: string;
+    copyrightColor: string;
+    showCopyright: boolean;
+    logoId: string;
+    showFrame: boolean;
+    selectedId: string;
+  };
+  const initialSnap: Snap = {
+    frames,
+    copyrightOffset: COPYRIGHT_DEFAULT_OFFSET,
+    copyrightSize: 40,
+    copyrightFont: "Noto Sans JP",
+    copyrightColor: "#000000",
+    showCopyright: true,
+    logoId: "",
+    showFrame: true,
+    selectedId: frames[0]?.id ?? "",
+  };
+  const history = useAppHistory<Snap>(initialSnap);
+  const snap = history.state;
+  const {
+    copyrightOffset,
+    copyrightSize,
+    copyrightFont,
+    copyrightColor,
+    showCopyright,
+    logoId,
+    showFrame,
+    selectedId,
+  } = snap;
+
+  // ---- 履歴経由 setter (commit options 付き) ----
+  const setSnap = history.set;
+  const replaceSnap = history.replace;
+
+  const setCopyrightOffset = (
+    next: { x: number; y: number } | ((p: { x: number; y: number }) => { x: number; y: number }),
+    opts?: Parameters<typeof setSnap>[1],
+  ) => {
+    setSnap((s) => ({
+      ...s,
+      copyrightOffset:
+        typeof next === "function" ? (next as (p: typeof s.copyrightOffset) => typeof s.copyrightOffset)(s.copyrightOffset) : next,
+    }), opts);
+  };
+  const setCopyrightSize = (n: number) =>
+    setSnap((s) => ({ ...s, copyrightSize: n }), { coalesceKey: "copyrightSize" });
+  const setCopyrightFont = (v: string) =>
+    setSnap((s) => ({ ...s, copyrightFont: v }));
+  const setCopyrightColor = (v: string) =>
+    setSnap((s) => ({ ...s, copyrightColor: v }), { coalesceKey: "copyrightColor" });
+  const setShowCopyright = (v: boolean) =>
+    setSnap((s) => ({ ...s, showCopyright: v }));
+  const setLogoId = (v: string) => setSnap((s) => ({ ...s, logoId: v }));
+  const setShowFrame = (v: boolean) => setSnap((s) => ({ ...s, showFrame: v }));
+  const setSelectedId = (id: string) =>
+    // 選択切替は履歴に積まない（コマ跨ぎでもUndoは時系列のまま）
+    replaceSnap((s) => ({ ...s, selectedId: id }));
+
+  /** frames を履歴付きで更新する（テキスト設定・順序・追加・削除など） */
+  const updateFramesHistory = (
+    next: FrameData[] | ((prev: FrameData[]) => FrameData[]),
+    opts?: Parameters<typeof setSnap>[1],
+  ) => {
+    setSnap((s) => ({
+      ...s,
+      frames: typeof next === "function" ? (next as (p: FrameData[]) => FrameData[])(s.frames) : next,
+    }), opts);
+  };
+
+  /** frames を履歴に積まずに置き換える（画像アップロード・下書き読込み等） */
+  const replaceFrames = (
+    next: FrameData[] | ((prev: FrameData[]) => FrameData[]),
+  ) => {
+    replaceSnap((s) => ({
+      ...s,
+      frames: typeof next === "function" ? (next as (p: FrameData[]) => FrameData[])(s.frames) : next,
+    }));
+  };
+
+  // 履歴 state の frames を context へ常に同期（保存・書き出し等が context を参照するため）
+  useEffect(() => {
+    setFrames(snap.frames);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap.frames]);
+
+  // context 側の frames が外部要因で変化した場合（読み込み等）は履歴側に反映
+  // ※ replace を使うので履歴はクリアされない。深い等価で無限ループ回避。
+  useEffect(() => {
+    if (frames !== snap.frames) {
+      replaceSnap((s) => ({ ...s, frames }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frames]);
+
   // Last measured element size in canvas px.
   // state にして、サイズ変化時に再レンダーされ copyrightCoord が再計算されるようにする。
   // （ref のままだと初回測定後に再レンダーが起きず、表示位置が古い h=0 で固定されてしまう）
@@ -165,18 +266,6 @@ const CreateFrames = () => {
     x: copyrightOffset.x,
     y: CANVAS_H + copyrightOffset.y - copyrightSize,
   };
-
-  // Undo/Redo: snapshot of {offset}
-  const undoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
-  const redoStackRef = useRef<{ offset: { x: number; y: number } }[]>([]);
-  const pushHistory = () => {
-    undoStackRef.current.push({ offset: copyrightOffset });
-    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    redoStackRef.current = [];
-  };
-  const [copyrightFont, setCopyrightFont] = useState("Noto Sans JP");
-  const [copyrightColor, setCopyrightColor] = useState("#000000");
-  const [logoId, setLogoId] = useState<string>("");
 
   // Resolve defaults from the selected media master (matched by id)
   const selectedMaster = media.find((m) => m.id === basic.mediaId);
@@ -214,28 +303,37 @@ const CreateFrames = () => {
   // Restore logo & copyright settings when loading an existing project
   const restoredProjectIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!currentProjectId) return;
+    if (!currentProjectId) {
+      // 新規案件 = 履歴クリア
+      if (restoredProjectIdRef.current !== null) {
+        restoredProjectIdRef.current = null;
+        history.clear();
+      }
+      return;
+    }
     if (restoredProjectIdRef.current === currentProjectId) return;
     const project = getProject(currentProjectId);
     if (!project) return;
     restoredProjectIdRef.current = currentProjectId;
-    if (project.logoId !== undefined) setLogoId(project.logoId);
+
+    // 案件切り替え時は履歴をクリアし、復元値で初期スナップショットを再構築する。
+    // 各 setter を個別に呼ぶと履歴に積まれてしまうため、replace で一括差し替える。
+    let nextOffset = COPYRIGHT_DEFAULT_OFFSET;
+    let nextShow = true;
+    let nextSize = 40;
+    let nextFont = "Noto Sans JP";
+    let nextColor = "#000000";
     if (project.copyright) {
-      setShowCopyright(project.copyright.show);
-      setCopyrightSize(project.copyright.size);
-      setCopyrightFont(project.copyright.font);
-      setCopyrightColor(project.copyright.color);
-      // 後方互換: 旧形式 (pos プリセット + offset) の場合は新座標系へ変換。
-      // 新形式 (pos なし) はそのまま offset を使用。
+      nextShow = project.copyright.show;
+      nextSize = project.copyright.size;
+      nextFont = project.copyright.font;
+      nextColor = project.copyright.color;
       const legacyPos = project.copyright.pos;
       const savedOffset = project.copyright.offset;
       if (legacyPos) {
-        // 旧形式: プリセットからの top-left 座標 + offset を計算し、
-        // 新座標系 (左下原点・Y正=下方向、左下端アンカー) に変換する。
-        // 要素サイズは未測定の可能性があるため、fontSize を高さの近似として使う。
         const PRESET_PADDING = 8;
         const w = copyrightSizeRef.current.w;
-        const h = project.copyright.size; // line-height: 1 前提で fontSize ≒ 高さ
+        const h = project.copyright.size;
         let bx = PRESET_PADDING;
         if (legacyPos.endsWith("-center")) bx = (CANVAS_W - w) / 2;
         else if (legacyPos.endsWith("-right")) bx = CANVAS_W - w - PRESET_PADDING;
@@ -244,15 +342,23 @@ const CreateFrames = () => {
         else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
         const topLeftX = bx + savedOffset.x;
         const topLeftY = by + savedOffset.y;
-        // 新座標系（左下端基準）へ変換:
-        //   左下端y = topLeftY + h, offset.y = 左下端y - CANVAS_H
-        setCopyrightOffset({ x: topLeftX, y: topLeftY + h - CANVAS_H });
+        nextOffset = { x: topLeftX, y: topLeftY + h - CANVAS_H };
         // eslint-disable-next-line no-console
         console.log("[migration] copyright pos+offset を新座標系へ変換しました");
       } else {
-        setCopyrightOffset(savedOffset);
+        nextOffset = savedOffset;
       }
     }
+    history.clear();
+    replaceSnap((s) => ({
+      ...s,
+      logoId: project.logoId !== undefined ? project.logoId : s.logoId,
+      copyrightOffset: nextOffset,
+      copyrightSize: nextSize,
+      copyrightFont: nextFont,
+      copyrightColor: nextColor,
+      showCopyright: nextShow,
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProjectId]);
 
@@ -311,27 +417,12 @@ const CreateFrames = () => {
   // Stage ref (the inner 1080xN scaled stage) for copyright drag math
   const stageRef = useRef<HTMLDivElement>(null);
 
-  const undoCopyright = () => {
-    const prev = undoStackRef.current.pop();
-    if (!prev) return;
-    redoStackRef.current.push({ offset: copyrightOffset });
-    if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-    setCopyrightOffset(prev.offset);
-  };
-  const redoCopyright = () => {
-    const next = redoStackRef.current.pop();
-    if (!next) return;
-    undoStackRef.current.push({ offset: copyrightOffset });
-    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    setCopyrightOffset(next.offset);
-  };
-
-  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo
-  const undoRef = useRef(undoCopyright);
-  const redoRef = useRef(redoCopyright);
+  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo (アプリ全体共通履歴)
+  const undoRef = useRef(history.undo);
+  const redoRef = useRef(history.redo);
   useEffect(() => {
-    undoRef.current = undoCopyright;
-    redoRef.current = redoCopyright;
+    undoRef.current = history.undo;
+    redoRef.current = history.redo;
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -363,17 +454,27 @@ const CreateFrames = () => {
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
     bgPaddingX, bgPaddingY,
   } = textSettings;
-  const patchText = (patch: Partial<TextSettings>) => {
+  /**
+   * テキスト設定を1コマに patch する。
+   * @param patch 変更内容
+   * @param opts.coalesceKey  連続変更を統合するキー（テキスト入力・色・スライダー等）
+   */
+  const patchText = (
+    patch: Partial<TextSettings>,
+    opts?: { coalesceKey?: string },
+  ) => {
     if (!selectedId) return;
-    setFrames((prev) =>
-      prev.map((f) =>
-        f.id === selectedId
-          ? {
-              ...f,
-              textSettings: { ...(f.textSettings ?? defaultText), ...patch },
-            }
-          : f,
-      ),
+    updateFramesHistory(
+      (prev) =>
+        prev.map((f) =>
+          f.id === selectedId
+            ? {
+                ...f,
+                textSettings: { ...(f.textSettings ?? defaultText), ...patch },
+              }
+            : f,
+        ),
+      opts,
     );
   };
 
@@ -387,13 +488,21 @@ const CreateFrames = () => {
     if (idx >= 0 && idx !== selectedFrameIndex) setSelectedFrameIndex(idx);
   }, [selectedId, frames, selectedFrameIndex, setSelectedFrameIndex]);
 
+  // SortableFrameCard からの汎用更新（display/transition/transitionTime 等）。
+  // ボタン/Select は即 commit、数値 input は coalesce で連続入力を統合。
   const updateFrame = (id: string, patch: Partial<FrameData>) => {
-    setFrames((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    const isNumericChange =
+      ("display" in patch && typeof patch.display === "number") ||
+      ("transitionTime" in patch && typeof patch.transitionTime === "number");
+    updateFramesHistory(
+      (prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+      isNumericChange ? { coalesceKey: `frame.${id}.numeric` } : undefined,
+    );
   };
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => {
+    updateFramesHistory((prev) => {
       const last = prev[prev.length - 1];
       const baseText = last?.textSettings
         ? structuredClone(last.textSettings)
@@ -415,24 +524,29 @@ const CreateFrames = () => {
         },
       ];
     });
+    // 履歴エントリ確定後に選択切替（履歴には積まない）
     setSelectedId(id);
   };
 
   // Reorder / delete handlers
   const moveFrame = (from: number, to: number) => {
     if (to < 0 || to >= frames.length) return;
-    setFrames((prev) => arrayMove(prev, from, to));
+    updateFramesHistory((prev) => arrayMove(prev, from, to));
   };
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const requestDelete = (id: string) => setPendingDeleteId(id);
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
-    setFrames((prev) => prev.filter((f) => f.id !== pendingDeleteId));
-    if (selectedId === pendingDeleteId) {
-      const remaining = frames.filter((f) => f.id !== pendingDeleteId);
-      setSelectedId(remaining[0]?.id ?? "");
-    }
+    // 削除前のスナップショット（テキスト含む）が history に保存されるため、Undoで完全復元される
+    const remaining = frames.filter((f) => f.id !== pendingDeleteId);
+    const newSelectedId =
+      selectedId === pendingDeleteId ? remaining[0]?.id ?? "" : selectedId;
+    setSnap((s) => ({
+      ...s,
+      frames: s.frames.filter((f) => f.id !== pendingDeleteId),
+      selectedId: newSelectedId,
+    }));
     setPendingDeleteId(null);
   };
 
@@ -445,7 +559,7 @@ const CreateFrames = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    setFrames((prev) => {
+    updateFramesHistory((prev) => {
       const oldIndex = prev.findIndex((f) => f.id === active.id);
       const newIndex = prev.findIndex((f) => f.id === over.id);
       if (oldIndex < 0 || newIndex < 0) return prev;
@@ -504,7 +618,9 @@ const CreateFrames = () => {
       setUploadDone(i + 1);
     }
 
-    setFrames((prev) => {
+    // 画像アップロードは履歴対象外（仕様）。replaceFrames で履歴に積まずに更新する。
+    let firstNewId: string | null = null;
+    replaceFrames((prev) => {
       const rebindMap = new Map(rebinds.map((r) => [r.id, r.image]));
       const updated = prev.map((f) =>
         rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
@@ -522,10 +638,11 @@ const CreateFrames = () => {
           text: "",
         };
         merged.push({ ...nf, textSettings: inheritedText });
+        if (firstNewId === null) firstNewId = nf.id;
       }
       return merged;
     });
-    if (newFrames.length > 0) setSelectedId(newFrames[0].id);
+    if (firstNewId) setSelectedId(firstNewId);
     setUploading(false);
     setCompletedCount(newFrames.length + rebindCount);
     if (rebindCount > 0) {
@@ -890,7 +1007,8 @@ const CreateFrames = () => {
                                   : { w, h },
                               );
                             }}
-                            onDragStart={() => pushHistory()}
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             onDrag={(nx, ny) => {
                               // 左下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
                               //   左下端 = (nx, ny + fontSize)
@@ -1068,8 +1186,14 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="X"
                           value={copyrightOffset.x}
-                          onChange={(nx) => setCopyrightOffset((prev) => ({ ...prev, x: nx }))}
-                          onDragStart={() => pushHistory()}
+                          onChange={(nx, meta) =>
+                            setCopyrightOffset(
+                              (prev) => ({ ...prev, x: nx }),
+                              meta?.source === "input" ? { coalesceKey: "copyrightOffset.x" } : undefined,
+                            )
+                          }
+                          onDragStart={() => history.beginScrub()}
+                          onDragEnd={() => history.endScrub()}
                           min={-500}
                           max={500}
                           unit="px"
@@ -1077,8 +1201,14 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="Y"
                           value={copyrightOffset.y}
-                          onChange={(ny) => setCopyrightOffset((prev) => ({ ...prev, y: ny }))}
-                          onDragStart={() => pushHistory()}
+                          onChange={(ny, meta) =>
+                            setCopyrightOffset(
+                              (prev) => ({ ...prev, y: ny }),
+                              meta?.source === "input" ? { coalesceKey: "copyrightOffset.y" } : undefined,
+                            )
+                          }
+                          onDragStart={() => history.beginScrub()}
+                          onDragEnd={() => history.endScrub()}
                           min={-500}
                           max={500}
                           unit="px"
@@ -1087,7 +1217,6 @@ const CreateFrames = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          pushHistory();
                           setCopyrightOffset(COPYRIGHT_DEFAULT_OFFSET);
                         }}
                         className="text-[10px] text-muted-foreground hover:text-primary underline"
@@ -1149,7 +1278,11 @@ const CreateFrames = () => {
                       />
                     </div>
                   </div>
-                  <Textarea value={text} onChange={(e) => patchText({ text: e.target.value })} rows={3} />
+                  <Textarea
+                    value={text}
+                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text.text" })}
+                    rows={3}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -1176,7 +1309,14 @@ const CreateFrames = () => {
                   <ScrubbyNumberInput
                     label="X"
                     value={pos.x}
-                    onChange={(nx) => patchText({ pos: { ...pos, x: nx } })}
+                    onChange={(nx, meta) =>
+                      patchText(
+                        { pos: { ...pos, x: nx } },
+                        meta?.source === "input" ? { coalesceKey: "text.pos.x" } : undefined,
+                      )
+                    }
+                    onDragStart={() => history.beginScrub()}
+                    onDragEnd={() => history.endScrub()}
                     min={0}
                     max={100}
                     unit="%"
@@ -1184,7 +1324,14 @@ const CreateFrames = () => {
                   <ScrubbyNumberInput
                     label="Y"
                     value={pos.y}
-                    onChange={(ny) => patchText({ pos: { ...pos, y: ny } })}
+                    onChange={(ny, meta) =>
+                      patchText(
+                        { pos: { ...pos, y: ny } },
+                        meta?.source === "input" ? { coalesceKey: "text.pos.y" } : undefined,
+                      )
+                    }
+                    onDragStart={() => history.beginScrub()}
+                    onDragEnd={() => history.endScrub()}
                     min={0}
                     max={100}
                     unit="%"
@@ -1209,7 +1356,7 @@ const CreateFrames = () => {
                   <Label className="text-xs">フォントサイズ：{fontSize}px</Label>
                   <Slider
                     value={[fontSize]}
-                    onValueChange={(v) => patchText({ fontSize: v[0] })}
+                    onValueChange={(v) => patchText({ fontSize: v[0] }, { coalesceKey: "text.fontSize" })}
                     min={12}
                     max={120}
                     step={1}
@@ -1222,10 +1369,10 @@ const CreateFrames = () => {
                     <input
                       type="color"
                       value={color}
-                      onChange={(e) => patchText({ color: e.target.value })}
+                      onChange={(e) => patchText({ color: e.target.value }, { coalesceKey: "text.color" })}
                       className="h-9 w-14 rounded border border-border cursor-pointer"
                     />
-                    <Input value={color} onChange={(e) => patchText({ color: e.target.value })} />
+                    <Input value={color} onChange={(e) => patchText({ color: e.target.value }, { coalesceKey: "text.color" })} />
                   </div>
                 </div>
 
@@ -1256,13 +1403,13 @@ const CreateFrames = () => {
                       <input
                         type="color"
                         value={strokeColor}
-                        onChange={(e) => patchText({ strokeColor: e.target.value })}
+                        onChange={(e) => patchText({ strokeColor: e.target.value }, { coalesceKey: "text.strokeColor" })}
                         className="h-9 w-14 rounded border border-border cursor-pointer"
                       />
                       <Input
                         type="number"
                         value={strokeWidth}
-                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
+                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) }, { coalesceKey: "text.strokeWidth" })}
                         min={1}
                         max={20}
                         className="w-20"
@@ -1283,16 +1430,16 @@ const CreateFrames = () => {
                         <input
                           type="color"
                           value={bgColor}
-                          onChange={(e) => patchText({ bgColor: e.target.value })}
+                          onChange={(e) => patchText({ bgColor: e.target.value }, { coalesceKey: "text.bgColor" })}
                           className="h-9 w-14 rounded border border-border cursor-pointer"
                         />
-                        <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value })} />
+                        <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value }, { coalesceKey: "text.bgColor" })} />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">透明度：{bgOpacity}%</Label>
                         <Slider
                           value={[bgOpacity]}
-                          onValueChange={(v) => patchText({ bgOpacity: v[0] })}
+                          onValueChange={(v) => patchText({ bgOpacity: v[0] }, { coalesceKey: "text.bgOpacity" })}
                           min={0}
                           max={100}
                           step={1}
@@ -1304,7 +1451,14 @@ const CreateFrames = () => {
                           <ScrubbyNumberInput
                             label="X"
                             value={bgPaddingX}
-                            onChange={(v) => patchText({ bgPaddingX: v })}
+                            onChange={(v, meta) =>
+                              patchText(
+                                { bgPaddingX: v },
+                                meta?.source === "input" ? { coalesceKey: "text.bgPaddingX" } : undefined,
+                              )
+                            }
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             min={-50}
                             max={200}
                             unit="px"
@@ -1312,7 +1466,14 @@ const CreateFrames = () => {
                           <ScrubbyNumberInput
                             label="Y"
                             value={bgPaddingY}
-                            onChange={(v) => patchText({ bgPaddingY: v })}
+                            onChange={(v, meta) =>
+                              patchText(
+                                { bgPaddingY: v },
+                                meta?.source === "input" ? { coalesceKey: "text.bgPaddingY" } : undefined,
+                              )
+                            }
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             min={-50}
                             max={200}
                             unit="px"
