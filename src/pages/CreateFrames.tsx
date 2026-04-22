@@ -154,11 +154,13 @@ const CreateFrames = () => {
   copyrightSizeRef.current = copyrightSize2;
 
   // 最終表示座標 (top-left canvas px)。全 Y 値で単一の式（条件分岐なし）。
+  // 基準は「要素の下端」: 下端 = CANVAS_H + offset.y
   //   topLeftX = offset.x
-  //   topLeftY = (CANVAS_H - h) + offset.y
+  //   topLeftY = CANVAS_H + offset.y - h
+  // → フォントサイズで h が変化しても下端位置は offset.y に固定される。
   const copyrightCoord = {
     x: copyrightOffset.x,
-    y: (CANVAS_H - copyrightSize2.h) + copyrightOffset.y,
+    y: CANVAS_H + copyrightOffset.y - copyrightSize2.h,
   };
 
   // Undo/Redo: snapshot of {offset}
