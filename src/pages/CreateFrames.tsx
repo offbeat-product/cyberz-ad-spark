@@ -1272,7 +1272,14 @@ const CreateFrames = () => {
                   <ScrubbyNumberInput
                     label="X"
                     value={pos.x}
-                    onChange={(nx) => patchText({ pos: { ...pos, x: nx } })}
+                    onChange={(nx, meta) =>
+                      patchText(
+                        { pos: { ...pos, x: nx } },
+                        meta?.source === "input" ? { coalesceKey: "text.pos.x" } : undefined,
+                      )
+                    }
+                    onDragStart={() => history.beginScrub()}
+                    onDragEnd={() => history.endScrub()}
                     min={0}
                     max={100}
                     unit="%"
@@ -1280,7 +1287,14 @@ const CreateFrames = () => {
                   <ScrubbyNumberInput
                     label="Y"
                     value={pos.y}
-                    onChange={(ny) => patchText({ pos: { ...pos, y: ny } })}
+                    onChange={(ny, meta) =>
+                      patchText(
+                        { pos: { ...pos, y: ny } },
+                        meta?.source === "input" ? { coalesceKey: "text.pos.y" } : undefined,
+                      )
+                    }
+                    onDragStart={() => history.beginScrub()}
+                    onDragEnd={() => history.endScrub()}
                     min={0}
                     max={100}
                     unit="%"
@@ -1305,7 +1319,7 @@ const CreateFrames = () => {
                   <Label className="text-xs">フォントサイズ：{fontSize}px</Label>
                   <Slider
                     value={[fontSize]}
-                    onValueChange={(v) => patchText({ fontSize: v[0] })}
+                    onValueChange={(v) => patchText({ fontSize: v[0] }, { coalesceKey: "text.fontSize" })}
                     min={12}
                     max={120}
                     step={1}
@@ -1318,10 +1332,10 @@ const CreateFrames = () => {
                     <input
                       type="color"
                       value={color}
-                      onChange={(e) => patchText({ color: e.target.value })}
+                      onChange={(e) => patchText({ color: e.target.value }, { coalesceKey: "text.color" })}
                       className="h-9 w-14 rounded border border-border cursor-pointer"
                     />
-                    <Input value={color} onChange={(e) => patchText({ color: e.target.value })} />
+                    <Input value={color} onChange={(e) => patchText({ color: e.target.value }, { coalesceKey: "text.color" })} />
                   </div>
                 </div>
 
@@ -1352,13 +1366,13 @@ const CreateFrames = () => {
                       <input
                         type="color"
                         value={strokeColor}
-                        onChange={(e) => patchText({ strokeColor: e.target.value })}
+                        onChange={(e) => patchText({ strokeColor: e.target.value }, { coalesceKey: "text.strokeColor" })}
                         className="h-9 w-14 rounded border border-border cursor-pointer"
                       />
                       <Input
                         type="number"
                         value={strokeWidth}
-                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) })}
+                        onChange={(e) => patchText({ strokeWidth: Number(e.target.value) }, { coalesceKey: "text.strokeWidth" })}
                         min={1}
                         max={20}
                         className="w-20"
@@ -1379,16 +1393,16 @@ const CreateFrames = () => {
                         <input
                           type="color"
                           value={bgColor}
-                          onChange={(e) => patchText({ bgColor: e.target.value })}
+                          onChange={(e) => patchText({ bgColor: e.target.value }, { coalesceKey: "text.bgColor" })}
                           className="h-9 w-14 rounded border border-border cursor-pointer"
                         />
-                        <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value })} />
+                        <Input value={bgColor} onChange={(e) => patchText({ bgColor: e.target.value }, { coalesceKey: "text.bgColor" })} />
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">透明度：{bgOpacity}%</Label>
                         <Slider
                           value={[bgOpacity]}
-                          onValueChange={(v) => patchText({ bgOpacity: v[0] })}
+                          onValueChange={(v) => patchText({ bgOpacity: v[0] }, { coalesceKey: "text.bgOpacity" })}
                           min={0}
                           max={100}
                           step={1}
@@ -1400,7 +1414,14 @@ const CreateFrames = () => {
                           <ScrubbyNumberInput
                             label="X"
                             value={bgPaddingX}
-                            onChange={(v) => patchText({ bgPaddingX: v })}
+                            onChange={(v, meta) =>
+                              patchText(
+                                { bgPaddingX: v },
+                                meta?.source === "input" ? { coalesceKey: "text.bgPaddingX" } : undefined,
+                              )
+                            }
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             min={-50}
                             max={200}
                             unit="px"
@@ -1408,7 +1429,14 @@ const CreateFrames = () => {
                           <ScrubbyNumberInput
                             label="Y"
                             value={bgPaddingY}
-                            onChange={(v) => patchText({ bgPaddingY: v })}
+                            onChange={(v, meta) =>
+                              patchText(
+                                { bgPaddingY: v },
+                                meta?.source === "input" ? { coalesceKey: "text.bgPaddingY" } : undefined,
+                              )
+                            }
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             min={-50}
                             max={200}
                             unit="px"
