@@ -52,6 +52,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useMediaMasters } from "@/hooks/useMediaMasters";
 import type { Transition } from "@/components/admin/MediaPreview";
 import { toast } from "sonner";
+import { useAppHistory } from "@/hooks/useAppHistory";
 
 const steps = [{ label: "基本設定" }, { label: "コマ設定" }, { label: "書き出し" }];
 
