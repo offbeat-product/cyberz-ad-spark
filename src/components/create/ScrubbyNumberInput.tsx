@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface ScrubbyNumberInputProps {
   label: string;
   value: number;
-  onChange: (value: number) => void;
+  onChange: (value: number, meta?: { source: "scrub" | "input" }) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
   min?: number;
@@ -49,7 +49,7 @@ const ScrubbyNumberInput = ({
       const speed = ev.shiftKey ? 10 : ev.altKey ? 0.1 : 1;
       const delta = Math.round(dx * speed * step);
       const next = Math.max(min, Math.min(max, startValueRef.current + delta));
-      onChange(next);
+      onChange(next, { source: "scrub" });
     };
     const onUp = () => {
       document.body.style.cursor = "";
@@ -75,7 +75,7 @@ const ScrubbyNumberInput = ({
         onChange={(e) => {
           const n = Number(e.target.value);
           if (Number.isNaN(n)) return;
-          onChange(Math.max(min, Math.min(max, n)));
+          onChange(Math.max(min, Math.min(max, n)), { source: "input" });
         }}
       />
     </div>
