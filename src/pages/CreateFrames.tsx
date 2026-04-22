@@ -154,11 +154,13 @@ const CreateFrames = () => {
   copyrightSizeRef.current = copyrightSize2;
 
   // 最終表示座標 (top-left canvas px)。全 Y 値で単一の式（条件分岐なし）。
+  // 基準は「要素の下端」: 下端 = CANVAS_H + offset.y
   //   topLeftX = offset.x
-  //   topLeftY = (CANVAS_H - h) + offset.y
+  //   topLeftY = CANVAS_H + offset.y - h
+  // → フォントサイズで h が変化しても下端位置は offset.y に固定される。
   const copyrightCoord = {
     x: copyrightOffset.x,
-    y: (CANVAS_H - copyrightSize2.h) + copyrightOffset.y,
+    y: CANVAS_H + copyrightOffset.y - copyrightSize2.h,
   };
 
   // Undo/Redo: snapshot of {offset}
@@ -239,8 +241,9 @@ const CreateFrames = () => {
         else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
         const topLeftX = bx + savedOffset.x;
         const topLeftY = by + savedOffset.y;
-        // 新座標系へ変換: x はそのまま、y = topLeftY - (CANVAS_H - h)
-        setCopyrightOffset({ x: topLeftX, y: topLeftY - (CANVAS_H - h) });
+        // 新座標系（下端基準）へ変換:
+        //   下端 = topLeftY + h, offset.y = 下端 - CANVAS_H = topLeftY + h - CANVAS_H
+        setCopyrightOffset({ x: topLeftX, y: topLeftY + h - CANVAS_H });
         // eslint-disable-next-line no-console
         console.log("[migration] copyright pos+offset を新座標系へ変換しました");
       } else {
@@ -886,12 +889,12 @@ const CreateFrames = () => {
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
-                              // 新座標系へ変換: (nx, ny) は top-left canvas px。
-                              //   x = nx, y = ny - (CANVAS_H - h)
+                              // 下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
+                              //   下端 = ny + h, offset.y = 下端 - CANVAS_H = ny + h - CANVAS_H
                               const { h } = copyrightSizeRef.current;
                               setCopyrightOffset({
                                 x: nx,
-                                y: ny - (CANVAS_H - h),
+                                y: ny + h - CANVAS_H,
                               });
                             }}
                           />
