@@ -156,11 +156,14 @@ const CreateFrames = () => {
   // 最終表示座標 (top-left canvas px)。全 Y 値で単一の式（条件分岐なし）。
   // 基準は「要素の下端」: 下端 = CANVAS_H + offset.y
   //   topLeftX = offset.x
-  //   topLeftY = CANVAS_H + offset.y - h
-  // → フォントサイズで h が変化しても下端位置は offset.y に固定される。
+  //   topLeftY = CANVAS_H + offset.y - fontSize
+  // アンカーポイントはテキスト「左下端」。CopyrightDraggable 側で line-height: 1 を
+  // 強制しているため、要素高さ ≒ fontSize となる。h(実測) ではなく fontSize を直接
+  // 使うことで、ブラウザのフォントメトリクス差や測定タイミングに左右されず、
+  // フォントサイズ変更時も左下端が完全に固定される。
   const copyrightCoord = {
     x: copyrightOffset.x,
-    y: CANVAS_H + copyrightOffset.y - copyrightSize2.h,
+    y: CANVAS_H + copyrightOffset.y - copyrightSize,
   };
 
   // Undo/Redo: snapshot of {offset}
@@ -228,11 +231,11 @@ const CreateFrames = () => {
       const savedOffset = project.copyright.offset;
       if (legacyPos) {
         // 旧形式: プリセットからの top-left 座標 + offset を計算し、
-        // 新座標系 (左下原点・Y正=下方向) に変換する。
-        // 要素サイズは未測定の可能性があるため、現在値（既定 0）を使う。
-        // 測定後に若干ズレるが、再ドラッグ/再保存で正しい値に上書きされる。
+        // 新座標系 (左下原点・Y正=下方向、左下端アンカー) に変換する。
+        // 要素サイズは未測定の可能性があるため、fontSize を高さの近似として使う。
         const PRESET_PADDING = 8;
-        const { w, h } = copyrightSizeRef.current;
+        const w = copyrightSizeRef.current.w;
+        const h = project.copyright.size; // line-height: 1 前提で fontSize ≒ 高さ
         let bx = PRESET_PADDING;
         if (legacyPos.endsWith("-center")) bx = (CANVAS_W - w) / 2;
         else if (legacyPos.endsWith("-right")) bx = CANVAS_W - w - PRESET_PADDING;
@@ -241,8 +244,8 @@ const CreateFrames = () => {
         else if (legacyPos.startsWith("bottom-")) by = CANVAS_H - h - PRESET_PADDING;
         const topLeftX = bx + savedOffset.x;
         const topLeftY = by + savedOffset.y;
-        // 新座標系（下端基準）へ変換:
-        //   下端 = topLeftY + h, offset.y = 下端 - CANVAS_H = topLeftY + h - CANVAS_H
+        // 新座標系（左下端基準）へ変換:
+        //   左下端y = topLeftY + h, offset.y = 左下端y - CANVAS_H
         setCopyrightOffset({ x: topLeftX, y: topLeftY + h - CANVAS_H });
         // eslint-disable-next-line no-console
         console.log("[migration] copyright pos+offset を新座標系へ変換しました");
@@ -889,12 +892,12 @@ const CreateFrames = () => {
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
-                              // 下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
-                              //   下端 = ny + h, offset.y = 下端 - CANVAS_H = ny + h - CANVAS_H
-                              const { h } = copyrightSizeRef.current;
+                              // 左下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
+                              //   左下端 = (nx, ny + fontSize)
+                              //   offset.y = 左下端y - CANVAS_H = ny + fontSize - CANVAS_H
                               setCopyrightOffset({
                                 x: nx,
-                                y: ny + h - CANVAS_H,
+                                y: ny + copyrightSize - CANVAS_H,
                               });
                             }}
                           />
