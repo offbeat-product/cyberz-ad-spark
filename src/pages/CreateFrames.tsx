@@ -892,12 +892,12 @@ const CreateFrames = () => {
                             }}
                             onDragStart={() => pushHistory()}
                             onDrag={(nx, ny) => {
-                              // 下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
-                              //   下端 = ny + h, offset.y = 下端 - CANVAS_H = ny + h - CANVAS_H
-                              const { h } = copyrightSizeRef.current;
+                              // 左下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
+                              //   左下端 = (nx, ny + fontSize)
+                              //   offset.y = 左下端y - CANVAS_H = ny + fontSize - CANVAS_H
                               setCopyrightOffset({
                                 x: nx,
-                                y: ny + h - CANVAS_H,
+                                y: ny + copyrightSize - CANVAS_H,
                               });
                             }}
                           />
