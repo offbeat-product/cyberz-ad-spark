@@ -974,15 +974,16 @@ const CreateFrames = () => {
                                   : { w, h },
                               );
                             }}
-                            onDragStart={() => pushHistory()}
+                            onDragStart={() => history.beginScrub()}
+                            onDragEnd={() => history.endScrub()}
                             onDrag={(nx, ny) => {
                               // 左下端基準の新座標系へ変換: (nx, ny) は top-left canvas px。
                               //   左下端 = (nx, ny + fontSize)
                               //   offset.y = 左下端y - CANVAS_H = ny + fontSize - CANVAS_H
-                              setCopyrightOffset({
-                                x: nx,
-                                y: ny + copyrightSize - CANVAS_H,
-                              });
+                              setCopyrightOffset(
+                                { x: nx, y: ny + copyrightSize - CANVAS_H },
+                                { transient: true },
+                              );
                             }}
                           />
                         )}
@@ -1152,8 +1153,11 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="X"
                           value={copyrightOffset.x}
-                          onChange={(nx) => setCopyrightOffset((prev) => ({ ...prev, x: nx }))}
-                          onDragStart={() => pushHistory()}
+                          onChange={(nx) =>
+                            setCopyrightOffset((prev) => ({ ...prev, x: nx }), { transient: true })
+                          }
+                          onDragStart={() => history.beginScrub()}
+                          onDragEnd={() => history.endScrub()}
                           min={-500}
                           max={500}
                           unit="px"
@@ -1161,8 +1165,11 @@ const CreateFrames = () => {
                         <ScrubbyNumberInput
                           label="Y"
                           value={copyrightOffset.y}
-                          onChange={(ny) => setCopyrightOffset((prev) => ({ ...prev, y: ny }))}
-                          onDragStart={() => pushHistory()}
+                          onChange={(ny) =>
+                            setCopyrightOffset((prev) => ({ ...prev, y: ny }), { transient: true })
+                          }
+                          onDragStart={() => history.beginScrub()}
+                          onDragEnd={() => history.endScrub()}
                           min={-500}
                           max={500}
                           unit="px"
@@ -1171,7 +1178,6 @@ const CreateFrames = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          pushHistory();
                           setCopyrightOffset(COPYRIGHT_DEFAULT_OFFSET);
                         }}
                         className="text-[10px] text-muted-foreground hover:text-primary underline"
