@@ -400,27 +400,12 @@ const CreateFrames = () => {
   // Stage ref (the inner 1080xN scaled stage) for copyright drag math
   const stageRef = useRef<HTMLDivElement>(null);
 
-  const undoCopyright = () => {
-    const prev = undoStackRef.current.pop();
-    if (!prev) return;
-    redoStackRef.current.push({ offset: copyrightOffset });
-    if (redoStackRef.current.length > 20) redoStackRef.current.shift();
-    setCopyrightOffset(prev.offset);
-  };
-  const redoCopyright = () => {
-    const next = redoStackRef.current.pop();
-    if (!next) return;
-    undoStackRef.current.push({ offset: copyrightOffset });
-    if (undoStackRef.current.length > 20) undoStackRef.current.shift();
-    setCopyrightOffset(next.offset);
-  };
-
-  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo
-  const undoRef = useRef(undoCopyright);
-  const redoRef = useRef(redoCopyright);
+  // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo (アプリ全体共通履歴)
+  const undoRef = useRef(history.undo);
+  const redoRef = useRef(history.redo);
   useEffect(() => {
-    undoRef.current = undoCopyright;
-    redoRef.current = redoCopyright;
+    undoRef.current = history.undo;
+    redoRef.current = history.redo;
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -452,17 +437,27 @@ const CreateFrames = () => {
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
     bgPaddingX, bgPaddingY,
   } = textSettings;
-  const patchText = (patch: Partial<TextSettings>) => {
+  /**
+   * テキスト設定を1コマに patch する。
+   * @param patch 変更内容
+   * @param opts.coalesceKey  連続変更を統合するキー（テキスト入力・色・スライダー等）
+   */
+  const patchText = (
+    patch: Partial<TextSettings>,
+    opts?: { coalesceKey?: string },
+  ) => {
     if (!selectedId) return;
-    setFrames((prev) =>
-      prev.map((f) =>
-        f.id === selectedId
-          ? {
-              ...f,
-              textSettings: { ...(f.textSettings ?? defaultText), ...patch },
-            }
-          : f,
-      ),
+    updateFramesHistory(
+      (prev) =>
+        prev.map((f) =>
+          f.id === selectedId
+            ? {
+                ...f,
+                textSettings: { ...(f.textSettings ?? defaultText), ...patch },
+              }
+            : f,
+        ),
+      opts,
     );
   };
 
