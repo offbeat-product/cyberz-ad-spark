@@ -488,13 +488,21 @@ const CreateFrames = () => {
     if (idx >= 0 && idx !== selectedFrameIndex) setSelectedFrameIndex(idx);
   }, [selectedId, frames, selectedFrameIndex, setSelectedFrameIndex]);
 
+  // SortableFrameCard からの汎用更新（display/transition/transitionTime 等）。
+  // ボタン/Select は即 commit、数値 input は coalesce で連続入力を統合。
   const updateFrame = (id: string, patch: Partial<FrameData>) => {
-    setFrames((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+    const isNumericChange =
+      ("display" in patch && typeof patch.display === "number") ||
+      ("transitionTime" in patch && typeof patch.transitionTime === "number");
+    updateFramesHistory(
+      (prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+      isNumericChange ? { coalesceKey: `frame.${id}.numeric` } : undefined,
+    );
   };
 
   const addFrame = () => {
     const id = `f${Date.now()}`;
-    setFrames((prev) => {
+    updateFramesHistory((prev) => {
       const last = prev[prev.length - 1];
       const baseText = last?.textSettings
         ? structuredClone(last.textSettings)
@@ -516,24 +524,29 @@ const CreateFrames = () => {
         },
       ];
     });
+    // 履歴エントリ確定後に選択切替（履歴には積まない）
     setSelectedId(id);
   };
 
   // Reorder / delete handlers
   const moveFrame = (from: number, to: number) => {
     if (to < 0 || to >= frames.length) return;
-    setFrames((prev) => arrayMove(prev, from, to));
+    updateFramesHistory((prev) => arrayMove(prev, from, to));
   };
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const requestDelete = (id: string) => setPendingDeleteId(id);
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
-    setFrames((prev) => prev.filter((f) => f.id !== pendingDeleteId));
-    if (selectedId === pendingDeleteId) {
-      const remaining = frames.filter((f) => f.id !== pendingDeleteId);
-      setSelectedId(remaining[0]?.id ?? "");
-    }
+    // 削除前のスナップショット（テキスト含む）が history に保存されるため、Undoで完全復元される
+    const remaining = frames.filter((f) => f.id !== pendingDeleteId);
+    const newSelectedId =
+      selectedId === pendingDeleteId ? remaining[0]?.id ?? "" : selectedId;
+    setSnap((s) => ({
+      ...s,
+      frames: s.frames.filter((f) => f.id !== pendingDeleteId),
+      selectedId: newSelectedId,
+    }));
     setPendingDeleteId(null);
   };
 
@@ -546,7 +559,7 @@ const CreateFrames = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    setFrames((prev) => {
+    updateFramesHistory((prev) => {
       const oldIndex = prev.findIndex((f) => f.id === active.id);
       const newIndex = prev.findIndex((f) => f.id === over.id);
       if (oldIndex < 0 || newIndex < 0) return prev;
@@ -605,7 +618,9 @@ const CreateFrames = () => {
       setUploadDone(i + 1);
     }
 
-    setFrames((prev) => {
+    // 画像アップロードは履歴対象外（仕様）。replaceFrames で履歴に積まずに更新する。
+    let firstNewId: string | null = null;
+    replaceFrames((prev) => {
       const rebindMap = new Map(rebinds.map((r) => [r.id, r.image]));
       const updated = prev.map((f) =>
         rebindMap.has(f.id) ? { ...f, image: rebindMap.get(f.id)! } : f,
@@ -623,10 +638,11 @@ const CreateFrames = () => {
           text: "",
         };
         merged.push({ ...nf, textSettings: inheritedText });
+        if (firstNewId === null) firstNewId = nf.id;
       }
       return merged;
     });
-    if (newFrames.length > 0) setSelectedId(newFrames[0].id);
+    if (firstNewId) setSelectedId(firstNewId);
     setUploading(false);
     setCompletedCount(newFrames.length + rebindCount);
     if (rebindCount > 0) {
