@@ -27,6 +27,8 @@ interface Props {
   selected: boolean;
   onSelect: () => void;
   onUpdate: (patch: Partial<FrameData>) => void;
+  /** Optional: called once before a coalesced/streaming update sequence begins. */
+  onUpdateCommit?: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
   onDelete: () => void;
