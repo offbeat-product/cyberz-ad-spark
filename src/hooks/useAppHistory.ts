@@ -33,6 +33,8 @@ export interface AppHistory<T> {
   undo: () => void;
   redo: () => void;
   clear: () => void;
+  /** 保留中の coalesce タイマーを即時確定する（blur / 保存ボタン押下時など） */
+  flush: () => void;
   canUndo: boolean;
   canRedo: boolean;
 }
@@ -202,6 +204,7 @@ export function useAppHistory<T>(initial: T): AppHistory<T> {
     undo,
     redo,
     clear,
+    flush: flushCoalesce,
     canUndo: pastRef.current.length > 0,
     canRedo: futureRef.current.length > 0,
   };
