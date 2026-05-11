@@ -21,6 +21,8 @@ export interface SetOptions {
   transient?: boolean;
   /** 連続呼び出しを 500ms 統合して1エントリ化 */
   coalesceKey?: string;
+  /** coalesce のデバウンス時間（ms）。未指定時は 500ms */
+  coalesceMs?: number;
 }
 
 export interface AppHistory<T> {
@@ -101,18 +103,19 @@ export function useAppHistory<T>(initial: T): AppHistory<T> {
 
     if (opts?.coalesceKey) {
       const key = opts.coalesceKey;
+      const ms = opts.coalesceMs ?? COALESCE_MS;
       const c = coalesceRef.current;
       if (c && c.key === key) {
         // 同じキーの継続: タイマーだけリセット
         if (c.timer) clearTimeout(c.timer);
-        c.timer = setTimeout(() => flushCoalesce(), COALESCE_MS);
+        c.timer = setTimeout(() => flushCoalesce(), ms);
       } else {
         // 別キーの coalesce が走っていれば即確定してから新しい統合を開始
         if (c) flushCoalesce();
         coalesceRef.current = {
           key,
           base: prev,
-          timer: setTimeout(() => flushCoalesce(), COALESCE_MS),
+          timer: setTimeout(() => flushCoalesce(), ms),
         };
       }
       stateRef.current = value;

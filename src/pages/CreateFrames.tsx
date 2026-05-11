@@ -477,7 +477,7 @@ const CreateFrames = () => {
    */
   const patchText = (
     patch: Partial<TextSettings>,
-    opts?: { coalesceKey?: string },
+    opts?: { coalesceKey?: string; coalesceMs?: number },
   ) => {
     if (!selectedId) return;
     updateFramesHistory(
@@ -1296,7 +1296,7 @@ const CreateFrames = () => {
                   </div>
                   <Textarea
                     value={text}
-                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text" })}
+                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text", coalesceMs: 1500 })}
                     rows={3}
                   />
                 </div>
