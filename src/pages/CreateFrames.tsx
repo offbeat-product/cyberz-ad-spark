@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { IMETextarea } from "@/components/ui/ime-input";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { useCreateFlow, defaultText, FrameData, TextSettings } from "@/contexts/CreateFlowContext";
 import { useProjects } from "@/hooks/useProjects";
