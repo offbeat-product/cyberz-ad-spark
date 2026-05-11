@@ -1297,7 +1297,17 @@ const CreateFrames = () => {
                   </div>
                   <Textarea
                     value={text}
-                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text", coalesceMs: 1500 })}
+                    onCompositionStart={() => {
+                      isComposingTextRef.current = true;
+                    }}
+                    onCompositionEnd={(e) => {
+                      isComposingTextRef.current = false;
+                      patchText({ text: e.currentTarget.value }, { coalesceKey: "text" });
+                    }}
+                    onChange={(e) => {
+                      if (isComposingTextRef.current) return;
+                      patchText({ text: e.target.value }, { coalesceKey: "text" });
+                    }}
                     rows={3}
                   />
                 </div>
