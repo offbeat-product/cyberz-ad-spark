@@ -1296,7 +1296,7 @@ const CreateFrames = () => {
                   </div>
                   <Textarea
                     value={text}
-                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text" })}
+                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text", coalesceMs: 1500 })}
                     rows={3}
                   />
                 </div>
