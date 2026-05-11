@@ -477,7 +477,7 @@ const CreateFrames = () => {
    */
   const patchText = (
     patch: Partial<TextSettings>,
-    opts?: { coalesceKey?: string },
+    opts?: { coalesceKey?: string; coalesceMs?: number },
   ) => {
     if (!selectedId) return;
     updateFramesHistory(
