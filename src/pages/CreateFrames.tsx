@@ -1294,10 +1294,9 @@ const CreateFrames = () => {
                       />
                     </div>
                   </div>
-                  <Textarea
+                  <TextInputArea
                     value={text}
-                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text.text" })}
-                    rows={3}
+                    onCommit={(v) => patchText({ text: v }, { coalesceKey: "text.text" })}
                   />
                 </div>
 
