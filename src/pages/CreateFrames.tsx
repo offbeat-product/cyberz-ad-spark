@@ -696,10 +696,10 @@ const CreateFrames = () => {
             <Button variant="outline" onClick={() => navigate("/create")}>
               戻る
             </Button>
-            <Button variant="outline" onClick={() => saveAsDraft({ step: 2 })}>
+            <Button variant="outline" onClick={() => { history.flush(); saveAsDraft({ step: 2 }); }}>
               <Save className="h-4 w-4" /> 下書き保存
             </Button>
-            <Button onClick={handleNext}>次へ</Button>
+            <Button onClick={() => { history.flush(); handleNext(); }}>次へ</Button>
           </>
         }
       />
