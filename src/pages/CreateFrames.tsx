@@ -444,6 +444,22 @@ const CreateFrames = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // input/textarea が blur した時点で保留中の debounce を即時 flush
+  // （Figma / Notion / Google Docs 等と同等の挙動）
+  const flushRef = useRef(history.flush);
+  useEffect(() => { flushRef.current = history.flush; });
+  useEffect(() => {
+    const onFocusOut = (e: FocusEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable) {
+        flushRef.current();
+      }
+    };
+    document.addEventListener("focusout", onFocusOut);
+    return () => document.removeEventListener("focusout", onFocusOut);
+  }, []);
+
   // Selected frame's text settings (per-frame). Falls back to defaults if absent.
   const selectedFrameForText = frames.find((f) => f.id === selectedId);
   const textSettings: TextSettings =
