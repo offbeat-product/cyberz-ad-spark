@@ -420,7 +420,6 @@ const CreateFrames = () => {
   // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo (アプリ全体共通履歴)
   const undoRef = useRef(history.undo);
   const redoRef = useRef(history.redo);
-  const isComposingTextRef = useRef(false);
   useEffect(() => {
     undoRef.current = history.undo;
     redoRef.current = history.redo;
@@ -1297,17 +1296,7 @@ const CreateFrames = () => {
                   </div>
                   <Textarea
                     value={text}
-                    onCompositionStart={() => {
-                      isComposingTextRef.current = true;
-                    }}
-                    onCompositionEnd={(e) => {
-                      isComposingTextRef.current = false;
-                      patchText({ text: e.currentTarget.value }, { coalesceKey: "text" });
-                    }}
-                    onChange={(e) => {
-                      if (isComposingTextRef.current) return;
-                      patchText({ text: e.target.value }, { coalesceKey: "text" });
-                    }}
+                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text" })}
                     rows={3}
                   />
                 </div>
