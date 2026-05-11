@@ -1294,9 +1294,19 @@ const CreateFrames = () => {
                       />
                     </div>
                   </div>
-                  <TextInputArea
+                  <Textarea
                     value={text}
-                    onCommit={(v) => patchText({ text: v }, { coalesceKey: "text.text" })}
+                    onCompositionStart={() => setIsComposingText(true)}
+                    onCompositionEnd={(e) => {
+                      setIsComposingText(false);
+                      patchText({ text: e.currentTarget.value }, { coalesceKey: "text.text" });
+                    }}
+                    onChange={(e) => {
+                      if (!isComposingText) {
+                        patchText({ text: e.target.value }, { coalesceKey: "text.text" });
+                      }
+                    }}
+                    rows={3}
                   />
                 </div>
 
