@@ -1295,7 +1295,7 @@ const CreateFrames = () => {
                       />
                     </div>
                   </div>
-                  <Textarea
+                  <IMETextarea
                     value={text}
                     onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text.text" })}
                     rows={3}
