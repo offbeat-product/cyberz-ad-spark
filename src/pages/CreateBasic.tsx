@@ -4,6 +4,7 @@ import PageHeader from "@/components/PageHeader";
 import StepIndicator from "@/components/StepIndicator";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { IMEInput } from "@/components/ui/ime-input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -47,7 +48,7 @@ const CreateBasic = () => {
         <div className="mt-10 space-y-6 rounded-lg border border-border bg-card p-8">
           <div className="space-y-2">
             <Label htmlFor="title">作品名</Label>
-            <Input
+            <IMEInput
               id="title"
               placeholder="例：転生したら最強剣士だった件 第1話"
               value={basic.title}
@@ -82,7 +83,7 @@ const CreateBasic = () => {
 
           <div className="space-y-2">
             <Label htmlFor="copyright">コピーライト表記</Label>
-            <Input
+            <IMEInput
               id="copyright"
               placeholder="例：©作者名／出版社"
               value={basic.copyright}
