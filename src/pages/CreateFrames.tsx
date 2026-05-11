@@ -470,6 +470,12 @@ const CreateFrames = () => {
     strokeEnabled, strokeColor, strokeWidth, bgEnabled, bgColor, bgOpacity,
     bgPaddingX, bgPaddingY,
   } = textSettings;
+  const [localText, setLocalText] = useState(text);
+
+  useEffect(() => {
+    setLocalText(text);
+  }, [selectedId, text]);
+
   /**
    * テキスト設定を1コマに patch する。
    * @param patch 変更内容
@@ -999,7 +1005,7 @@ const CreateFrames = () => {
                                 mixBlendMode: (legacyBlendMap[blend] || blend) as React.CSSProperties["mixBlendMode"],
                               }}
                             >
-                              {text || "テキスト"}
+                              {localText || "テキスト"}
                             </div>
                           );
                         })()}
@@ -1295,8 +1301,14 @@ const CreateFrames = () => {
                     </div>
                   </div>
                   <Textarea
-                    value={text}
-                    onChange={(e) => patchText({ text: e.target.value }, { coalesceKey: "text" })}
+                    value={localText}
+                    onChange={(e) => setLocalText(e.target.value)}
+                    onBlur={() => {
+                      if (localText !== text) {
+                        patchText({ text: localText }, { coalesceKey: "text" });
+                        history.flush();
+                      }
+                    }}
                     rows={3}
                   />
                 </div>
