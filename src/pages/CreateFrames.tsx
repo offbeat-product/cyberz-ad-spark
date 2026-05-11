@@ -420,6 +420,7 @@ const CreateFrames = () => {
   // Keyboard: Cmd/Ctrl+Z undo, Cmd/Ctrl+Shift+Z (or Cmd+Y) redo (アプリ全体共通履歴)
   const undoRef = useRef(history.undo);
   const redoRef = useRef(history.redo);
+  const isComposingTextRef = useRef(false);
   useEffect(() => {
     undoRef.current = history.undo;
     redoRef.current = history.redo;
