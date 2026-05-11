@@ -551,6 +551,8 @@ const CreateFrames = () => {
   };
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // IME 変換中フラグ（テキスト入力欄の日本語変換が壊れないようにするため）
+  const [isComposingText, setIsComposingText] = useState(false);
   const requestDelete = (id: string) => setPendingDeleteId(id);
   const confirmDelete = () => {
     if (!pendingDeleteId) return;
